@@ -234,51 +234,56 @@ const res = await fetch(`/api/match?${params.toString()}`);
  const cGradeWarning = document.getElementById('cGradeWarning');
  const cGradeWarningText = document.getElementById('cGradeWarningText');
  const zhizhongArea = document.getElementById('zhizhongArea');
+ const resultsArea = document.getElementById('resultsArea');
  
  // 检查是否有 C 等级警告
- if (data.has_c_grade && data.c_grade_note) {
+ if (data.res_a && data.res_a.has_c_grade && data.res_a.c_grade_note) {
+ // A 类或 B 类含 C
  cGradeWarning.classList.remove('hidden');
- cGradeWarningText.textContent = data.c_grade_note;
+ cGradeWarningText.textContent = data.res_a.c_grade_note;
  
  // 如果是 A 类含 C 且可以报考中职，显示中职学校
- if (data.can_apply_zhi_zhong && currentMode === 'A') {
+ if (data.res_a.can_apply_zhi_zhong && currentMode === 'A') {
  zhizhongArea.classList.remove('hidden');
  // 加载中职学校数据
  loadZhizhongSchools(year, total);
+ // A 类含 C 时，隐藏普通高中结果区
+ resultsArea.classList.add('hidden');
  } else {
  zhizhongArea.classList.add('hidden');
  // B 类含 C，隐藏普通高中结果区
- document.getElementById('resultsArea').classList.add('hidden');
- return; // 结束，不显示普通高中结果
+ resultsArea.classList.add('hidden');
  }
+ return; // 结束，不显示普通高中结果
  } else {
  // 没有 C 等级，正常显示
  cGradeWarning.classList.add('hidden');
  zhizhongArea.classList.add('hidden');
+ resultsArea.classList.remove('hidden');
  }
  
- document.getElementById('resultsArea').classList.remove('hidden');
-        
-        const userTotal = currentMode === 'A' ? data.user_total_a : data.user_total_b;
-        const dashboard = document.getElementById('gradeDashboard');
-        dashboard.innerHTML = `
-            <div class="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold">
-                等级总分: ${userTotal} 分
-            </div>
-            <div class="px-3 py-1 ${userTotal >= 12 ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'} rounded-full text-xs font-bold">
-                ${userTotal >= 12 ? '满足绝大多数要求' : '部分学校要求较高'}
-            </div>
-        `;
+ // 正常情况：显示普通高中匹配结果
+ const userTotal = currentMode === 'A' ? data.user_total_a : data.user_total_b;
+ const dashboard = document.getElementById('gradeDashboard');
+ dashboard.innerHTML = `
+ <div class="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold">
+ 等级总分：${userTotal} 分
+ </div>
+ <div class="px-3 py-1 ${userTotal >= 12 ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'} rounded-full text-xs font-bold">
+ ${userTotal >= 12 ? '满足绝大多数要求' : '部分学校要求较高'}
+ </div>
+ `;
 
-        allData = currentMode === 'A' ? data.res_a : data.res_b;
-        
-        renderList(allData.rush.slice(0, 4), 'rushList');
-        renderList(allData.stable.slice(0, 4), 'stableList');
-        renderList(allData.backup.slice(0, 4), 'backupList');
-        
-        document.getElementById('btnAllRush').innerText = allData.rush.length > 4 ? '显示全部' : '全部已显示';
-        document.getElementById('btnAllStable').innerText = allData.stable.length > 4 ? '显示全部' : '全部已显示';
-        document.getElementById('btnAllBackup').innerText = allData.backup.length > 4 ? '显示全部' : '全部已显示';
+ const resultData = currentMode === 'A' ? data.res_a : data.res_b;
+ allData = resultData;
+ 
+ renderList(allData.rush.slice(0, 4), 'rushList');
+ renderList(allData.stable.slice(0, 4), 'stableList');
+ renderList(allData.backup.slice(0, 4), 'backupList');
+ 
+ document.getElementById('btnAllRush').innerText = allData.rush.length > 4 ? '显示全部' : '全部已显示';
+ document.getElementById('btnAllStable').innerText = allData.stable.length > 4 ? '显示全部' : '全部已显示';
+ document.getElementById('btnAllBackup').innerText = allData.backup.length > 4 ? '显示全部' : '全部已显示';
     } catch (e) {
         console.error(e);
         alert('模拟请求失败: ' + e.message);
@@ -294,15 +299,18 @@ async function loadZhizhongSchools(year, totalScore) {
  try {
  const params = new URLSearchParams();
  params.append('year', year);
- params.append('type', 'zz'); // 中职类型
+ params.append('type', 'voc'); // 中职类型
  
  const res = await fetch(`/api/match?${params.toString()}`);
- if (!res.ok) return;
+ if (!res.ok) {
+ console.error('加载中职学校失败:', res.status);
+ return;
+ }
  
  const data = await res.json();
  const zhizhongList = document.getElementById('zhizhongList');
  
- // 根据分数筛选可报考的中职学校（分差>0 的）
+ // 根据分数筛选可报考的中职学校
  const applicable = [];
  const notApplicable = [];
  
