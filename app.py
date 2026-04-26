@@ -231,25 +231,23 @@ def api_match():
         if not score: return {'rush': [], 'stable': [], 'backup': []}
         
         # 1. 确定体育分权重
-        # 当前考生是 2026 年的，体育分是 80
         sport_current = 80 
-        # 对比的年份（2023-2025）体育分是 50
-        sport_line = get_sport_score(year) # 根据选定的对比年份获取 (50)
+        sport_line = get_sport_score(year) 
         
-        # SQL: 只查普通高中
-        sql = 'SELECT school_name, school_attr, fee_type, batch, min_score, subject_grade_req, subject_grade_total_req FROM scores WHERE year=? AND school_type = "普通高中" AND score_type = "普通高中" AND min_score IS NOT NULL GROUP BY school_name ORDER BY min_score DESC'
+        # SQL: 移除 GROUP BY school_name，确保拿到该校所有不同类型的计划记录
+        sql = 'SELECT school_name, school_attr, fee_type, batch, min_score, subject_grade_req, subject_grade_total_req FROM scores WHERE year=? AND school_type = "普通高中" AND score_type = "普通高中" AND min_score IS NOT NULL ORDER BY min_score DESC'
         rows = query_all(sql, [year])
         
         results = []
         for r in rows:
-            # 核心计算：纯学术分对比
-            # Diff = (用户总分 - 80) - (学校分数线 - 50)
-            diff = score - r['min_score'] - (sport_current - sport_line)
-            
-            # 等级校验（硬性要求）
+            # 1. 等级校验 (这是区分 A/B 类计划的关键过滤器)
+            # 如果用户选 A 类，只有要求为 A 类的记录才能 pass；B 类同理。
             grade_check = check_detailed_grade_req(grades, r.get('subject_grade_req'), r.get('subject_grade_total_req'), p_type)
             
             if grade_check['pass']:
+                # 2. 计算纯学术分差: (用户-80) - (学校-50) = 用户 - 学校 - 30
+                diff = score - r['min_score'] - (sport_current - sport_line)
+                
                 results.append({
                     'school_name': r['school_name'], 
                     'school_attr': r['school_attr'], 
@@ -261,7 +259,7 @@ def api_match():
                     'grade_reason': ''
                 })
         
-        # 根据纯学术分差值分档
+        # 3. 根据纯学术分差值分档
         rush = [r for r in results if -10 <= r['diff'] <= 10]
         stable = [r for r in results if 10 < r['diff'] <= 30]
         backup = [r for r in results if r['diff'] > 30]
