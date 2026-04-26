@@ -236,23 +236,26 @@ const cGradeWarningText = document.getElementById('cGradeWarningText');
 const zhizhongArea = document.getElementById('zhizhongArea');
 const resultsArea = document.getElementById('resultsArea');
 
+// 根据当前模式获取对应的结果数据
+const resultData = currentMode === 'A' ? data.res_a : data.res_b;
+
 // 检查是否有 C 等级警告
-if (data.res_a && data.res_a.has_c_grade && data.res_a.c_grade_note) {
+if (resultData && resultData.has_c_grade && resultData.c_grade_note) {
  // A 类或 B 类含 C
  cGradeWarning.classList.remove('hidden');
- cGradeWarningText.textContent = data.res_a.c_grade_note;
+ cGradeWarningText.textContent = resultData.c_grade_note;
  
  // 如果是 A 类含 C 且可以报考中职，显示中职学校
- if (data.res_a.can_apply_zhi_zhong && currentMode === 'A') {
- zhizhongArea.classList.remove('hidden');
- // 加载中职学校数据
- loadZhizhongSchools(year, total);
- // A 类含 C 时，隐藏普通高中结果区
- resultsArea.classList.add('hidden');
+ if (resultData.can_apply_zhi_zhong && currentMode === 'A') {
+  zhizhongArea.classList.remove('hidden');
+  // 加载中职学校数据
+  loadZhizhongSchools(year, total);
+  // A 类含 C 时，隐藏普通高中结果区
+  resultsArea.classList.add('hidden');
  } else {
- zhizhongArea.classList.add('hidden');
- // B 类含 C，隐藏普通高中结果区
- resultsArea.classList.add('hidden');
+  zhizhongArea.classList.add('hidden');
+  // B 类含 C，隐藏普通高中结果区
+  resultsArea.classList.add('hidden');
  }
  return; // 结束，不显示普通高中结果
 } else {
@@ -261,10 +264,10 @@ if (data.res_a && data.res_a.has_c_grade && data.res_a.c_grade_note) {
  resultsArea.classList.remove('hidden');
  // A 类用户显示中职学校推荐
  if (currentMode === 'A') {
- zhizhongArea.classList.remove('hidden');
- loadZhizhongSchools(year, total);
+  zhizhongArea.classList.remove('hidden');
+  loadZhizhongSchools(year, total);
  } else {
- zhizhongArea.classList.add('hidden');
+  zhizhongArea.classList.add('hidden');
  }
 }
 
