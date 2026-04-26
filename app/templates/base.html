@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中山中考志愿填报模拟系统 - {% block title %}{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+        body { font-family: 'Noto Sans SC', sans-serif; }
+        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+    <nav class="gradient-bg text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <a href="/" class="flex items-center space-x-2 text-xl font-bold">
+                        <i class="fas fa-graduation-cap"></i>
+                        <span>中山中考志愿模拟系统</span>
+                    </a>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="/" class="hover:bg-white/20 px-3 py-2 rounded-md text-sm font-medium transition">首页</a>
+                        <a href="/simulate" class="hover:bg-white/20 px-3 py-2 rounded-md text-sm font-medium transition">智能模拟</a>
+                        <a href="/search" class="hover:bg-white/20 px-3 py-2 rounded-md text-sm font-medium transition">学校查询</a>
+                        <a href="/compare" class="hover:bg-white/20 px-3 py-2 rounded-md text-sm font-medium transition">分数对比</a>
+                        <a href="/quota" class="hover:bg-white/20 px-3 py-2 rounded-md text-sm font-medium transition">指标生查询</a>
+                        <a href="/enrollment" class="hover:bg-white/20 px-3 py-2 rounded-md text-sm font-medium transition">招生计划</a>
+                        <a href="/about" class="hover:bg-white/20 px-3 py-2 rounded-md text-sm font-medium transition">关于</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="bg-gray-800 text-gray-300 py-8">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <p class="text-sm">© 2026 中山中考志愿填报决策支持工具 | 基于历史数据模拟</p>
+            <p class="text-xs mt-2 text-gray-500">免责声明：本系统仅供模拟参考，具体请以教育局公布的官方指南为准。</p>
+        </div>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}首页{% endblock %}
+{% block content %}
+<div class="text-center py-12">
+    <h1 class="text-4xl font-extrabold text-gray-900 mb-4">欢迎使用中山中考志愿模拟系统</h1>
+    <p class="text-lg text-gray-600 mb-8">基于历史分数线数据，通过“冲、稳、保”策略，为您提供科学的填报建议。</p>
+    
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+        <a href="/simulate" class="p-6 bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition group">
+            <div class="w-12 h-12 gradient-bg text-white rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition">
+                <i class="fas fa-magic text-xl"></i>
+            </div>
+            <h3 class="text-xl font-bold mb-2">智能模拟</h3>
+            <p class="text-gray-500 text-sm">输入分数，一键获取“冲稳保”学校推荐名单。</p>
+        </a>
+        <a href="/search" class="p-6 bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition group">
+            <div class="w-12 h-12 gradient-bg text-white rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition">
+                <i class="fas fa-search text-xl"></i>
+            </div>
+            <h3 class="text-xl font-bold mb-2">学校查询</h3>
+            <p class="text-gray-500 text-sm">快速检索各年度学校最低出档分数线。</p>
+        </a>
+        <a href="/quota" class="p-6 bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition group">
+            <div class="w-12 h-12 gradient-bg text-white rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition">
+                <i class="fas fa-id-card text-xl"></i>
+            </div>
+            <h3 class="text-xl font-bold mb-2">指标生查询</h3>
+            <p class="text-gray-500 text-sm">查询各初中在普高的指标生录取分布。</p>
+        </a>
+    </div>
+</div>
+{% endblock %}

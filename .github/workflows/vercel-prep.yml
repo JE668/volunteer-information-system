@@ -1,0 +1,14 @@
+name: Vercel Prep
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          ls -R
+          [ -f vercel.json ] && [ -f app.py ] || exit 1

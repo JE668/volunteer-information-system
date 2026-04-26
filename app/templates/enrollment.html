@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}招生计划{% endblock %}
+{% block content %}
+<div class="max-w-5xl mx-auto">
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 mb-8">
+        <h2 class="text-2xl font-bold mb-4">招生计划概览</h2>
+        <p class="text-gray-500 text-sm mb-6">查看各学校的招生规模与计划属性（普高/中职）</p>
+        <div class="flex gap-4">
+            <select id="yearSelect" class="p-2 border rounded-md outline-none focus:ring-2 focus:ring-indigo-500">
+                <option value="2025">2025年</option>
+                <option value="2024">2024年</option>
+                <option value="2023">2023年</option>
+            </select>
+            <button id="loadBtn" class="gradient-bg text-white px-6 py-2 rounded-md font-bold hover:opacity-90 transition">加载计划</button>
+        </div>
+    </div>
+    
+    <div id="enrollmentArea" class="grid grid-cols-1 gap-6"></div>
+</div>
+
+<script>
+document.getElementById('loadBtn').onclick = async () => {
+    const year = document.getElementById('yearSelect').value;
+    const res = await fetch(`/api/schools?year=${year}&type=all`);
+    const data = await res.json();
+    
+    const area = document.getElementById('enrollmentArea');
+    if(!data.length) {
+        area.innerHTML = '<div class="text-center py-12 text-gray-400 italic">暂无计划数据</div>';
+        return;
+    }
+    
+    area.innerHTML = data.map(s => `
+        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex justify-between items-center">
+            <div>
+                <div class="font-bold text-gray-800">${s.school_name}</div>
+                <div class="text-xs text-gray-500">${s.school_attr} | ${s.fee_type} | ${s.batch}</div>
+            </div>
+            <div class="text-right">
+                <div class="text-sm font-medium text-gray-600">最低分</div>
+                <div class="font-mono font-bold text-indigo-600">${s.min_score}分</div>
+            </div>
+        </div>
+    `).join('');
+};
+</script>
+{% endblock %}
