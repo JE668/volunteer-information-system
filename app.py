@@ -229,20 +229,46 @@ def api_match():
     # 定义内部函数，直接闭包使用 year 和 sport，避免作用域问题
     def do_match(score, grades, p_type):
         if not score: return {'rush': [], 'stable': [], 'backup': []}
+        
+        # 1. 确定体育分权重
+        # 当前考生是 2026 年的，体育分是 80
+        sport_current = 80 
+        # 对比的年份（2023-2025）体育分是 50
+        sport_line = get_sport_score(year) # 根据选定的对比年份获取 (50)
+        
         # SQL: 只查普通高中
         sql = 'SELECT school_name, school_attr, fee_type, batch, min_score, subject_grade_req, subject_grade_total_req FROM scores WHERE year=? AND school_type = "普通高中" AND score_type = "普通高中" AND min_score IS NOT NULL GROUP BY school_name ORDER BY min_score DESC'
         rows = query_all(sql, [year])
         
         results = []
         for r in rows:
-            diff = score - r['min_score']
+            # 核心计算：纯学术分对比
+            # Diff = (用户总分 - 80) - (学校分数线 - 50)
+            diff = score - r['min_score'] - (sport_current - sport_line)
+            
+            # 等级校验（硬性要求）
             grade_check = check_detailed_grade_req(grades, r.get('subject_grade_req'), r.get('subject_grade_total_req'), p_type)
-            results.append({'school_name': r['school_name'], 'school_attr': r['school_attr'], 'fee_type': r['fee_type'], 'batch': r['batch'], 'min_score': r['min_score'], 'diff': diff, 'grade_pass': grade_check['pass'], 'grade_reason': grade_check['reason']})
+            
+            if grade_check['pass']:
+                results.append({
+                    'school_name': r['school_name'], 
+                    'school_attr': r['school_attr'], 
+                    'fee_type': r['fee_type'], 
+                    'batch': r['batch'], 
+                    'min_score': r['min_score'], 
+                    'diff': diff, 
+                    'grade_pass': True, 
+                    'grade_reason': ''
+                })
         
-        rush = [r for r in results if -10 <= r['diff'] <= 10 and r['grade_pass']]
-        stable = [r for r in results if 10 < r['diff'] <= 30 and r['grade_pass']]
-        backup = [r for r in results if r['diff'] > 30 and r['grade_pass']]
-        rush.sort(key=lambda x: x['diff']); stable.sort(key=lambda x: x['diff']); backup.sort(key=lambda x: -x['min_score'])
+        # 根据纯学术分差值分档
+        rush = [r for r in results if -10 <= r['diff'] <= 10]
+        stable = [r for r in results if 10 < r['diff'] <= 30]
+        backup = [r for r in results if r['diff'] > 30]
+        
+        rush.sort(key=lambda x: x['diff'])
+        stable.sort(key=lambda x: x['diff'])
+        backup.sort(key=lambda x: -x['min_score'])
         return {'rush': rush, 'stable': stable, 'backup': backup}
 
     if school_type == 'pg':
