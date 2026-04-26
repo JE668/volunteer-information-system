@@ -1,104 +1,186 @@
 {% extends "base.html" %}
 {% block title %}智能模拟{% endblock %}
 {% block content %}
-<div class="max-w-4xl mx-auto">
+<div class="max-w-6xl mx-auto">
     <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-200 mb-8">
-        <h2 class="text-2xl font-bold mb-6 flex items-center">
-            <i class="fas fa-calculator mr-3 text-indigo-600"></i>分数匹配计算器
-        </h2>
-        <form id="simulateForm" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">总分</label>
-                <input type="number" name="score" required placeholder="如: 580" class="w-full p-2 border rounded-md focus:ring-2 focus:ring-indigo-500 outline-none">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">对比年份</label>
-                <select name="year" class="w-full p-2 border rounded-md focus:ring-2 focus:ring-indigo-500 outline-none">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold flex items-center">
+                <i class="fas fa-calculator mr-3 text-indigo-600"></i>智能志愿匹配模拟
+            </h2>
+            <div class="flex items-center gap-4">
+                <label class="text-sm font-medium text-gray-600">对比年份</label>
+                <select id="yearSelect" class="p-2 border rounded-md outline-none focus:ring-2 focus:ring-indigo-500">
                     <option value="2025">2025年</option>
                     <option value="2024">2024年</option>
                     <option value="2023">2023年</option>
                 </select>
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">学校类型</label>
-                <select name="type" class="w-full p-2 border rounded-md focus:ring-2 focus:ring-indigo-500 outline-none">
-                    <option value="pg">普通高中</option>
-                    <option value="voc">中职学校</option>
-                </select>
-            </div>
-            <div class="flex items-end">
-                <button type="submit" class="w-full gradient-bg text-white font-bold py-2 rounded-md hover:opacity-90 transition">开始模拟</button>
-            </div>
-        </form>
-    </div>
-
-    <div id="results" class="hidden space-y-6">
-        <div class="flex items-center justify-between mb-4">
-            <h3 class="text-xl font-bold">模拟结果</h3>
-            <div id="scoreBadge" class="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm font-bold"></div>
         </div>
-        
-        <div class="grid grid-cols-1 gap-6">
-            <!-- 冲 -->
-            <div class="bg-white rounded-xl shadow-sm border-l-4 border-red-500 overflow-hidden">
-                <div class="bg-red-50 px-4 py-2 border-b border-red-100 flex justify-between items-center">
-                    <span class="font-bold text-red-700"><i class="fas fa-fire mr-2"></i>冲 (Rush) - 风险较高，有机会</span>
-                    <span class="text-xs text-red-600">分差 0 ~ 15 分</span>
+
+        <!-- 模式切换 Tab -->
+        <div class="flex p-1 bg-gray-100 rounded-xl mb-8 w-fit">
+            <button id="tabA" onclick="switchMode('A')" class="px-6 py-2 rounded-lg font-bold transition-all duration-200 bg-white text-indigo-600 shadow-sm">A 类 (公费计划)</button>
+            <button id="tabB" onclick="switchMode('B')" class="px-6 py-2 rounded-lg font-bold transition-all duration-200 text-gray-500 hover:text-gray-700">B 类 (自费/参公)</button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- 输入区域 -->
+            <div class="lg:col-span-1 space-y-6">
+                <div class="bg-gray-50 p-6 rounded-xl border border-gray-200">
+                    <h3 class="font-bold text-gray-700 mb-4 flex items-center">
+                        <i class="fas fa-edit mr-2"></i>成绩输入
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">总分 (含体育)</label>
+                            <input type="number" id="totalScore" placeholder="如: 580" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-lg font-mono">
+                        </div>
+
+                        <div id="gradeGrid" class="grid grid-cols-2 gap-3">
+                            <!-- 动态加载科目 -->
+                        </div>
+                    </div>
                 </div>
-                <div id="rushList" class="divide-y"></div>
+
+                <button id="simulateBtn" class="w-full gradient-bg text-white font-bold py-4 rounded-xl hover:opacity-90 transition shadow-lg text-lg">
+                    开始匹配模拟
+                </button>
             </div>
-            <!-- 稳 -->
-            <div class="bg-white rounded-xl shadow-sm border-l-4 border-yellow-500 overflow-hidden">
-                <div class="bg-yellow-50 px-4 py-2 border-b border-yellow-100 flex justify-between items-center">
-                    <span class="font-bold text-yellow-700"><i class="fas fa-balance-scale mr-2"></i>稳 (Stable) - 录取概率较大</span>
-                    <span class="text-xs text-yellow-600">分差 15 ~ 40 分</span>
+
+            <!-- 结果区域 -->
+            <div class="lg:col-span-2">
+                <div id="emptyState" class="h-full flex flex-col items-center justify-center text-center p-12 border-2 border-dashed border-gray-200 rounded-2xl text-gray-400">
+                    <i class="fas fa-magic text-4xl mb-4 opacity-20"></i>
+                    <p>输入成绩并点击开始模拟<br>系统将根据总分及等级科目要求进行匹配</p>
                 </div>
-                <div id="stableList" class="divide-y"></div>
-            </div>
-            <!-- 保 -->
-            <div class="bg-white rounded-xl shadow-sm border-l-4 border-green-500 overflow-hidden">
-                <div class="bg-green-50 px-4 py-2 border-b border-green-100 flex justify-between items-center">
-                    <span class="font-bold text-green-700"><i class="fas fa-shield-alt mr-2"></i>保 (Backup) - 极高概率录取</span>
-                    <span class="text-xs text-green-600">分差 > 40 分</span>
+
+                <div id="resultsArea" class="hidden space-y-8">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-xl font-bold text-gray-800">匹配结果分析</h3>
+                        <div id="scoreSummary" class="text-sm font-medium text-gray-500"></div>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-6">
+                        <!-- 冲 -->
+                        <div class="bg-white rounded-xl shadow-sm border-l-4 border-red-500 overflow-hidden">
+                            <div class="bg-red-50 px-4 py-3 border-b border-red-100 flex justify-between items-center">
+                                <span class="font-bold text-red-700"><i class="fas fa-fire mr-2"></i>冲 (Rush) - 风险较高，有机会</span>
+                                <span class="text-xs font-medium text-red-600 bg-red-100 px-2 py-0.5 rounded">分差 0 ~ 15 分</span>
+                            </div>
+                            <div id="rushList" class="divide-y"></div>
+                        </div>
+                        <!-- 稳 -->
+                        <div class="bg-white rounded-xl shadow-sm border-l-4 border-yellow-500 overflow-hidden">
+                            <div class="bg-yellow-50 px-4 py-3 border-b border-yellow-100 flex justify-between items-center">
+                                <span class="font-bold text-yellow-700"><i class="fas fa-balance-scale mr-2"></i>稳 (Stable) - 录取概率较大</span>
+                                <span class="text-xs font-medium text-yellow-600 bg-yellow-100 px-2 py-0.5 rounded">分差 15 ~ 40 分</span>
+                            </div>
+                            <div id="stableList" class="divide-y"></div>
+                        </div>
+                        <!-- 保 -->
+                        <div class="bg-white rounded-xl shadow-sm border-l-4 border-green-500 overflow-hidden">
+                            <div class="bg-green-50 px-4 py-3 border-b border-green-100 flex justify-between items-center">
+                                <span class="font-bold text-green-700"><i class="fas fa-shield-alt mr-2"></i>保 (Backup) - 极高概率录取</span>
+                                <span class="text-xs font-medium text-green-600 bg-green-100 px-2 py-0.5 rounded">分差 > 40 分</span>
+                            </div>
+                            <div id="backupList" class="divide-y"></div>
+                        </div>
+                    </div>
                 </div>
-                <div id="backupList" class="divide-y"></div>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-document.getElementById('simulateForm').onsubmit = async (e) => {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    const params = new URLSearchParams(formData);
+let currentMode = 'A';
+const subjectConfigs = {
+    'A': { 'bio': '生物', 'geo': '地理', 'his': '历史', 'pol': '道法' },
+    'B': { 'bio': '生物', 'geo': '地理', 'phy': '物理', 'che': '化学' }
+};
+
+function switchMode(mode) {
+    currentMode = mode;
+    document.getElementById('tabA').className = mode === 'A' ? 'px-6 py-2 rounded-lg font-bold transition-all duration-200 bg-white text-indigo-600 shadow-sm' : 'px-6 py-2 rounded-lg font-bold transition-all duration-200 text-gray-500 hover:text-gray-700';
+    document.getElementById('tabB').className = mode === 'B' ? 'px-6 py-2 rounded-lg font-bold transition-all duration-200 bg-white text-indigo-600 shadow-sm' : 'px-6 py-2 rounded-lg font-bold transition-all duration-200 text-gray-500 hover:text-gray-700';
+    renderGradeInputs();
+}
+
+function renderGradeInputs() {
+    const grid = document.getElementById('gradeGrid');
+    const config = subjectConfigs[currentMode];
+    grid.innerHTML = Object.entries(config).map(([id, name]) => `
+        <div>
+            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">${name}</label>
+            <select id="grade_${id}" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white">
+                <option value="A+">A+</option>
+                <option value="A">A</option>
+                <option value="B+">B+</option>
+                <option value="B" selected>B</option>
+                <option value="C">C</option>
+            </select>
+        </div>
+    `).join('');
+}
+
+document.getElementById('simulateBtn').onclick = async () => {
+    const year = document.getElementById('yearSelect').value;
+    const total = document.getElementById('totalScore').value;
+    if(!total) return alert('请输入总分');
+
+    // 构建参数
+    const params = new URLSearchParams();
+    params.append('year', year);
+    params.append('type', 'pg');
+
+    if(currentMode === 'A') {
+        params.append('score_a', total);
+        params.append('bio_a', document.getElementById('grade_bio').value);
+        params.append('geo_a', document.getElementById('grade_geo').value);
+        params.append('his_a', document.getElementById('grade_his').value);
+        params.append('pol_a', document.getElementById('grade_pol').value);
+    } else {
+        params.append('score_b', total);
+        params.append('bio_b', document.getElementById('grade_bio').value);
+        params.append('geo_b', document.getElementById('grade_geo').value);
+        params.append('phy_b', document.getElementById('grade_phy').value);
+        params.append('che_b', document.getElementById('grade_che').value);
+    }
+
     const res = await fetch(`/api/match?${params.toString()}`);
     const data = await res.json();
-    
     if(data.error) return alert(data.error);
-    
-    document.getElementById('results').classList.remove('hidden');
-    document.getElementById('scoreBadge').innerText = `总分: ${data.score} | 等级: ${data.grade}`;
+
+    // 显示结果
+    document.getElementById('emptyState').classList.add('hidden');
+    document.getElementById('resultsArea').classList.remove('hidden');
+    document.getElementById('scoreSummary').innerText = `模拟计划: ${currentMode === 'A' ? 'A类(公费)' : 'B类(自费/参公)'} | 总分: ${total}`;
+
+    const targetResults = currentMode === 'A' ? data.res_a : data.res_b;
     
     const renderList = (list, elementId) => {
         const el = document.getElementById(elementId);
         el.innerHTML = list.length ? list.map(s => `
             <div class="p-4 flex justify-between items-center hover:bg-gray-50 transition">
                 <div>
-                    <div class="font-bold text-gray-800">${s.school_name} ${s.major_name ? `(${s.major_name})` : ''}</div>
-                    <div class="text-xs text-gray-500">${s.fee_type || '未知'} | ${s.batch || ''}</div>
+                    <div class="font-bold text-gray-800">${s.school_name}</div>
+                    <div class="text-xs text-gray-500">${s.school_attr} | ${s.fee_type} | ${s.batch}</div>
                 </div>
                 <div class="text-right">
                     <div class="font-mono font-bold text-indigo-600">${s.min_score}分</div>
                     <div class="text-xs text-gray-400">分差: ${s.diff > 0 ? '+' : ''}${s.diff}</div>
                 </div>
             </div>
-        `).join('') : '<div class="p-4 text-gray-400 text-sm italic">暂无匹配学校</div>';
+        `).join('') : '<div class="p-4 text-gray-400 text-sm italic">暂无符合条件的学校</div>';
     };
-    
-    renderList(data.rush, 'rushList');
-    renderList(data.stable, 'stableList');
-    renderList(data.backup, 'backupList');
+
+    renderList(targetResults.rush, 'rushList');
+    renderList(targetResults.stable, 'stableList');
+    renderList(targetResults.backup, 'backupList');
 };
+
+// 初始化
+renderGradeInputs();
 </script>
 {% endblock %}
