@@ -152,13 +152,13 @@ function renderGradeInputs() {
     grid.innerHTML = Object.entries(config).map(([id, name]) => `
         <div>
             <label class="block text-xs font-bold text-gray-500 uppercase mb-1">${name}</label>
-            <select id="grade_${id}" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white">
-                <option value="A+">A+</option>
-                <option value="A">A</option>
-                <option value="B+">B+</option>
-                <option value="B" selected>B</option>
-                <option value="C">C</option>
-            </select>
+ <select id="grade_${id}" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white">
+ <option value="A+" selected>A+</option>
+ <option value="A">A</option>
+ <option value="B+">B+</option>
+ <option value="B">B</option>
+ <option value="C">C</option>
+ </select>
         </div>
     `).join('');
 }
@@ -277,15 +277,13 @@ ${userTotal >= 12 ? '满足绝大多数要求' : '部分学校要求较高'}
 const resultData = currentMode === 'A' ? data.res_a : data.res_b;
 allData = resultData;
 
-// A 类用户且不含 C 时，也显示中职学校推荐（可选功能）
+// A 类用户且不含 C 时，也显示中职学校推荐
 if (currentMode === 'A' && data.res_a && data.res_a.can_apply_zhi_zhong) {
- // 可以选择是否显示中职推荐区域
- // 如果需要始终显示，取消下面这行的注释
- // zhizhongArea.classList.remove('hidden');
- // loadZhizhongSchools(year, total);
+ zhizhongArea.classList.remove('hidden');
+ loadZhizhongSchools(year, total);
 }
  
- renderList(allData.rush.slice(0, 4), 'rushList');
+renderList(allData.rush.slice(0, 4), 'rushList');
  renderList(allData.stable.slice(0, 4), 'stableList');
  renderList(allData.backup.slice(0, 4), 'backupList');
  
