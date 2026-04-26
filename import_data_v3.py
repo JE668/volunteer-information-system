@@ -104,7 +104,7 @@ def import_data(conn):
         subj_grade = clean_str(row['考查科目等级最低要求'])
         subj_total = clean_str(row['考查科目等级总分最低要求'])
         quality = clean_str(row['综合素质评价要求'])
-        total_req = clean_score(row['总分最低要求'])
+        total_req = clean_score(row['中考总分最低要求'])
         source = clean_str(row['分数来源'])
         
         if not school_name or not year: continue

@@ -77,6 +77,60 @@ def page_compare(): return render_template('compare.html')
 @app.route('/quota')
 def page_quota(): return render_template('quota.html')
 
+@app.route('/api/enrollment')
+def api_enrollment():
+    year = request.args.get('year', 2025, type=int)
+    high_school = request.args.get('high_school', '')
+    junior_school = request.args.get('junior_school', '')
+    
+    sql = '''
+        SELECT 
+            q.high_school as school_name, 
+            q.school_attr, 
+            q.fee_type, 
+            q.junior_school, 
+            q.min_score as quota_score, 
+            q.rank_order, 
+            q.source,
+            s.min_score as regular_score
+        FROM quota q 
+        LEFT JOIN scores s ON q.high_school = s.school_name 
+            AND s.year = q.year 
+            AND s.batch = "第一批" 
+            AND s.score_type = "普通高中" 
+        WHERE q.year = ? 
+    '''
+    
+    params = [year]
+    if high_school:
+        sql += ' AND q.high_school LIKE ?'
+        params.append(f'%{high_school}%')
+    if junior_school:
+        sql += ' AND q.junior_school LIKE ?'
+        params.append(f'%{junior_school}%')
+        
+    sql += ' GROUP BY q.high_school ORDER BY q.min_score DESC'
+    
+    rows = query_all(sql, params)
+    result = []
+    for r in rows:
+        quota_s = r['quota_score']
+        reg_s = r['regular_score']
+        diff = (reg_s - quota_s) if (quota_s and reg_s) else None
+        
+        result.append({
+            'school_name': r['school_name'],
+            'school_attr': r['school_attr'],
+            'fee_type': r['fee_type'],
+            'junior_school': r['junior_school'],
+            'min_score': quota_s,
+            'regular_min_score': reg_s,
+            'diff': diff,
+            'rank_order': r['rank_order'],
+            'source': r['source']
+        })
+    return jsonify(result)
+
 @app.route('/enrollment')
 def page_enrollment(): return render_template('enrollment.html')
 
@@ -90,13 +144,57 @@ def page_about(): return render_template('about.html')
 def api_schools():
     year = request.args.get('year', 2025, type=int)
     school_type = request.args.get('type', 'pg')
+    attr = request.args.get('attr', '')
+    fee = request.args.get('fee', '')
+    batch = request.args.get('batch', '')
+    
     result = []
+    
+    # 基础过滤条件
+    where_clauses = ['year=?', 'school_type = "普通高中"', 'min_score IS NOT NULL']
+    params = [year]
+    if attr: 
+        where_clauses.append('school_attr = ?')
+        params.append(attr)
+    if fee: 
+        where_clauses.append('fee_type = ?')
+        params.append(fee)
+    if batch: 
+        where_clauses.append('batch = ?')
+        params.append(batch)
+    
+    where_sql = " AND ".join(where_clauses)
+    
     if school_type in ('pg', 'all'):
-        rows = query_all('SELECT DISTINCT school_name, school_attr, fee_type, batch, score_type, MIN(min_score) as min_score FROM scores WHERE year=? AND school_type = "普通高中" AND min_score IS NOT NULL GROUP BY school_name, score_type ORDER BY school_name', [year])
+        # 批次权重排序逻辑
+        order_sql = "ORDER BY school_name"
+        if not batch:
+            # 使用 CASE WHEN 实现批次优先级排序
+            order_sql = """ORDER BY 
+                CASE batch 
+                    WHEN '提前批' THEN 1 
+                    WHEN '第一批' THEN 2 
+                    WHEN '第二批' THEN 3 
+                    WHEN '第三批' THEN 4 
+                    ELSE 5 END ASC, 
+                min_score DESC"""
+        else:
+            order_sql = "ORDER BY min_score DESC"
+
+        sql = f'SELECT DISTINCT school_name, school_attr, fee_type, batch, score_type, MIN(min_score) as min_score FROM scores WHERE {where_sql} GROUP BY school_name, score_type {order_sql}'
+        rows = query_all(sql, params)
         for r in rows: result.append({'school_name': r['school_name'], 'school_attr': r['school_attr'], 'fee_type': r['fee_type'], 'batch': r['batch'], 'score_type': r['score_type'], 'min_score': r['min_score'], 'type': 'pg'})
+    
     if school_type in ('voc', 'all'):
-        rows = query_all('SELECT DISTINCT school_name, school_attr, fee_type, batch, MIN(min_score) as min_score FROM scores WHERE year=? AND school_type = "中职学校" AND min_score IS NOT NULL GROUP BY school_name ORDER BY school_name', [year])
+        # 中职学校同样应用筛选
+        voc_where = where_clauses[:]
+        voc_where[1] = 'school_type = "中职学校"'
+        voc_where_sql = " AND ".join(voc_where)
+        
+        sql = f'SELECT DISTINCT school_name, school_attr, fee_type, batch, MIN(min_score) as min_score FROM scores WHERE {voc_where_sql} GROUP BY school_name ORDER BY school_name'
+        rows = query_all(sql, params)
         for r in rows: result.append({'school_name': r['school_name'], 'school_attr': r['school_attr'], 'fee_type': r['fee_type'], 'batch': r['batch'], 'min_score': r['min_score'], 'type': 'voc'})
+        
     return jsonify(result)
 
 @app.route('/api/schools_by_batch')
