@@ -56,33 +56,44 @@
                 </div>
 
                 <div id="resultsArea" class="hidden space-y-8">
-                    <div class="flex items-center justify-between">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <h3 class="text-xl font-bold text-gray-800">匹配结果分析</h3>
-                        <div id="scoreSummary" class="text-sm font-medium text-gray-500"></div>
+                        <div id="gradeDashboard" class="flex gap-3">
+                            <!-- 等级分看板 -->
+                        </div>
                     </div>
 
                     <div class="grid grid-cols-1 gap-6">
                         <!-- 冲 -->
                         <div class="bg-white rounded-xl shadow-sm border-l-4 border-red-500 overflow-hidden">
                             <div class="bg-red-50 px-4 py-3 border-b border-red-100 flex justify-between items-center">
-                                <span class="font-bold text-red-700"><i class="fas fa-fire mr-2"></i>冲 (Rush) - 风险较高，有机会</span>
-                                <span class="text-xs font-medium text-red-600 bg-red-100 px-2 py-0.5 rounded">分差 -10 ~ 10 分</span>
+                                <span class="font-bold text-red-700"><i class="fas fa-fire mr-2"></i>冲 (Rush)</span>
+                                <div class="flex items-center gap-3">
+                                    <span class="text-xs font-medium text-red-600 bg-red-100 px-2 py-0.5 rounded">分差 -10 ~ 10</span>
+                                    <button onclick="toggleAll('rush')" id="btnAllRush" class="text-xs text-red-600 hover:underline font-bold">显示全部</button>
+                                </div>
                             </div>
                             <div id="rushList" class="divide-y"></div>
                         </div>
                         <!-- 稳 -->
                         <div class="bg-white rounded-xl shadow-sm border-l-4 border-yellow-500 overflow-hidden">
                             <div class="bg-yellow-50 px-4 py-3 border-b border-yellow-100 flex justify-between items-center">
-                                <span class="font-bold text-yellow-700"><i class="fas fa-balance-scale mr-2"></i>稳 (Stable) - 录取概率较大</span>
-                                <span class="text-xs font-medium text-yellow-600 bg-yellow-100 px-2 py-0.5 rounded">分差 10 ~ 30 分</span>
+                                <span class="font-bold text-yellow-700"><i class="fas fa-balance-scale mr-2"></i>稳 (Stable)</span>
+                                <div class="flex items-center gap-3">
+                                    <span class="text-xs font-medium text-yellow-600 bg-yellow-100 px-2 py-0.5 rounded">分差 10 ~ 30</span>
+                                    <button onclick="toggleAll('stable')" id="btnAllStable" class="text-xs text-yellow-600 hover:underline font-bold">显示全部</button>
+                                </div>
                             </div>
                             <div id="stableList" class="divide-y"></div>
                         </div>
                         <!-- 保 -->
                         <div class="bg-white rounded-xl shadow-sm border-l-4 border-green-500 overflow-hidden">
                             <div class="bg-green-50 px-4 py-3 border-b border-green-100 flex justify-between items-center">
-                                <span class="font-bold text-green-700"><i class="fas fa-shield-alt mr-2"></i>保 (Backup) - 极高概率录取</span>
-                                <span class="text-xs font-medium text-green-600 bg-green-100 px-2 py-0.5 rounded">分差 > 30 分</span>
+                                <span class="font-bold text-green-700"><i class="fas fa-shield-alt mr-2"></i>保 (Backup)</span>
+                                <div class="flex items-center gap-3">
+                                    <span class="text-xs font-medium text-green-600 bg-green-100 px-2 py-0.5 rounded">分差 > 30</span>
+                                    <button onclick="toggleAll('backup')" id="btnAllBackup" class="text-xs text-green-600 hover:underline font-bold">显示全部</button>
+                                </div>
                             </div>
                             <div id="backupList" class="divide-y"></div>
                         </div>
@@ -95,6 +106,7 @@
 
 <script>
 let currentMode = 'A';
+let allData = { rush: [], stable: [], backup: [] };
 const subjectConfigs = {
     'A': { 'bio': '生物', 'geo': '地理', 'his': '历史', 'pol': '道法' },
     'B': { 'bio': '生物', 'geo': '地理', 'phy': '物理', 'che': '化学' }
@@ -123,6 +135,39 @@ function renderGradeInputs() {
         </div>
     `).join('');
 }
+
+function toggleAll(type) {
+    const list = allData[type];
+    const el = document.getElementById(type + 'List');
+    const btn = document.getElementById('btnAll' + type.charAt(0).toUpperCase() + type.slice(1));
+    
+    if (btn.innerText === '显示全部') {
+        renderList(list, type + 'List');
+        btn.innerText = '收起';
+    } else {
+        renderList(list.slice(0, 4), type + 'List');
+        btn.innerText = '显示全部';
+    }
+}
+
+const renderList = (list, elementId) => {
+    const el = document.getElementById(elementId);
+    el.innerHTML = list.length ? list.map(s => `
+        <div class="p-4 flex justify-between items-center hover:bg-gray-50 transition">
+            <div>
+                <div class="flex items-center gap-2">
+                    <div class="font-bold text-gray-800">${s.school_name}</div>
+                    <span class="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded-full">等级: 通过</span>
+                </div>
+                <div class="text-xs text-gray-500">${s.school_attr} | ${s.fee_type} | ${s.batch}</div>
+            </div>
+            <div class="text-right">
+                <div class="font-mono font-bold text-indigo-600">${s.min_score}分</div>
+                <div class="text-xs ${s.diff > 0 ? 'text-green-600' : 'text-red-600'} font-medium">分差: ${s.diff > 0 ? '+' : ''}${s.diff}</div>
+            </div>
+        </div>
+    `).join('') : '<div class="p-4 text-gray-400 text-sm italic text-center">暂无符合条件的学校</div>';
+};
 
 document.getElementById('simulateBtn').onclick = async () => {
     const year = document.getElementById('yearSelect').value;
@@ -153,32 +198,28 @@ document.getElementById('simulateBtn').onclick = async () => {
 
     document.getElementById('emptyState').classList.add('hidden');
     document.getElementById('resultsArea').classList.remove('hidden');
-    document.getElementById('scoreSummary').innerText = `模拟体系: ${currentMode === 'A' ? 'A类 (生地历道)' : 'B类 (生地物化)'} | 总分: ${total}`;
-
-    const targetResults = currentMode === 'A' ? data.res_a : data.res_b;
     
-    const renderList = (list, elementId) => {
-        const el = document.getElementById(elementId);
-        el.innerHTML = list.length ? list.map(s => `
-            <div class="p-4 flex justify-between items-center hover:bg-gray-50 transition">
-                <div>
-                    <div class="flex items-center gap-2">
-                        <div class="font-bold text-gray-800">${s.school_name}</div>
-                        <span class="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded-full">等级: 通过</span>
-                    </div>
-                    <div class="text-xs text-gray-500">${s.school_attr} | ${s.fee_type} | ${s.batch}</div>
-                </div>
-                <div class="text-right">
-                    <div class="font-mono font-bold text-indigo-600">${s.min_score}分</div>
-                    <div class="text-xs ${s.diff > 0 ? 'text-green-600' : 'text-red-600'} font-medium">分差: ${s.diff > 0 ? '+' : ''}${s.diff}</div>
-                </div>
-            </div>
-        `).join('') : '<div class="p-4 text-gray-400 text-sm italic text-center">暂无符合条件的学校</div>';
-    };
+    const userTotal = currentMode === 'A' ? data.user_total_a : data.user_total_b;
+    const dashboard = document.getElementById('gradeDashboard');
+    dashboard.innerHTML = `
+        <div class="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold">
+            等级总分: ${userTotal} 分
+        </div>
+        <div class="px-3 py-1 ${userTotal >= 12 ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'} rounded-full text-xs font-bold">
+            ${userTotal >= 12 ? '满足绝大多数要求' : '部分学校要求较高'}
+        </div>
+    `;
 
-    renderList(targetResults.rush, 'rushList');
-    renderList(targetResults.stable, 'stableList');
-    renderList(targetResults.backup, 'backupList');
+    allData = currentMode === 'A' ? data.res_a : data.res_b;
+    
+    renderList(allData.rush.slice(0, 4), 'rushList');
+    renderList(allData.stable.slice(0, 4), 'stableList');
+    renderList(allData.backup.slice(0, 4), 'backupList');
+    
+    // 更新按钮文字
+    document.getElementById('btnAllRush').innerText = allData.rush.length > 4 ? '显示全部' : '全部已显示';
+    document.getElementById('btnAllStable').innerText = allData.stable.length > 4 ? '显示全部' : '全部已显示';
+    document.getElementById('btnAllBackup').innerText = allData.backup.length > 4 ? '显示全部' : '全部已显示';
 };
 
 renderGradeInputs();
