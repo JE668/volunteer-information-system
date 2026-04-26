@@ -189,41 +189,63 @@ def api_match():
 
     # 定义内部函数，直接闭包使用 year 和 sport，避免作用域问题
     def do_match(score, grades, p_type):
-        if not score: return {'rush': [], 'stable': [], 'backup': []}
+        """
+        匹配函数：根据成绩和等级匹配学校
         
-        # 1. 确定体育分权重
+        规则：
+        - A 类含 C：不能报考普通高中，只能报考中职学校
+        - B 类含 C：不能报考任何学校
+        - 不含 C：正常匹配
+        """
+        if not score: return {'rush': [], 'stable': [], 'backup': [], 'has_c_grade': False, 'c_grade_note': ''}
+        
+        # 检查是否有 C 等级
+        grade_subjects = {'A': ['生物', '地理', '历史', '道法'], 'B': ['生物', '地理', '物理', '化学']}.get(p_type, [])
+        has_c = any(grades.get(sub, 'C') == 'C' for sub in grade_subjects)
+        
+        # B 类含 C：不能报考任何学校
+        if p_type == 'B' and has_c:
+            return {
+                'rush': [], 'stable': [], 'backup': [], 
+                'has_c_grade': True, 
+                'c_grade_note': 'B 类等级含 C，无法报考任何学校（B 类只有普通高中计划）'
+            }
+        
+        # A 类含 C：不能报考普通高中，返回空结果并提示可以报考中职
+        if p_type == 'A' and has_c:
+            return {
+                'rush': [], 'stable': [], 'backup': [], 
+                'has_c_grade': True, 
+                'c_grade_note': 'A 类等级含 C，无法报考普通高中（公费/自费/参公），但可以报考中职学校',
+                'can_apply_zhi_zhong': True  # 可以报考中职
+            }
+        
+        # 不含 C：正常匹配普通高中
         sport_current = 80 
         sport_line = get_sport_score(year) 
-        
-        # 2. SQL: 直接在数据库层面过滤 plan_type，确保绝对纯净
-        # A 类用户 -> 仅查 'A 类计划'；B 类用户 -> 仅查 'B 类计划'
         target_plan = 'A 类计划' if p_type == 'A' else 'B 类计划'
         sql = 'SELECT school_name, school_attr, fee_type, batch, plan_type, min_score, subject_grade_req, subject_grade_total_req FROM scores WHERE year=? AND school_type = "普通高中" AND score_type = "普通高中" AND substr(plan_type, 1, 1) = ? AND min_score IS NOT NULL ORDER BY min_score DESC'
         rows = query_all(sql, [year, target_plan[0]])
         
         results = []
         for r in rows:
-            # 1. 等级校验 (这是区分 A/B 类计划的关键过滤器)
-            # 如果用户选 A 类，只有要求为 A 类的记录才能 pass；B 类同理。
             grade_check = check_detailed_grade_req(grades, r.get('subject_grade_req'), r.get('subject_grade_total_req'), p_type)
             
             if grade_check['pass']:
-                # 2. 计算纯学术分差: (用户-80) - (学校-50) = 用户 - 学校 - 30
                 diff = score - r['min_score'] - (sport_current - sport_line)
                 
                 results.append({
-                'school_name': r['school_name'], 
-                'school_attr': r['school_attr'], 
-                'fee_type': r['fee_type'], 
-                'batch': r['batch'], 
-                'plan_type': r['plan_type'],
-                'min_score': r['min_score'], 
-                'diff': diff, 
-                'grade_pass': True, 
-                'grade_reason': ''
+                    'school_name': r['school_name'], 
+                    'school_attr': r['school_attr'], 
+                    'fee_type': r['fee_type'], 
+                    'batch': r['batch'], 
+                    'plan_type': r['plan_type'],
+                    'min_score': r['min_score'], 
+                    'diff': diff, 
+                    'grade_pass': True, 
+                    'grade_reason': ''
                 })
         
-        # 3. 根据纯学术分差值分档
         rush = [r for r in results if -10 <= r['diff'] <= 10]
         stable = [r for r in results if 10 < r['diff'] <= 30]
         backup = [r for r in results if r['diff'] > 30]
@@ -231,7 +253,11 @@ def api_match():
         rush.sort(key=lambda x: x['diff'])
         stable.sort(key=lambda x: x['diff'])
         backup.sort(key=lambda x: -x['min_score'])
-        return {'rush': rush, 'stable': stable, 'backup': backup}
+        
+        result = {'rush': rush, 'stable': stable, 'backup': backup, 'has_c_grade': False, 'c_grade_note': ''}
+        if p_type == 'A':
+            result['can_apply_zhi_zhong'] = True  # A 类用户可以选中职
+        return result
 
     if school_type == 'pg':
         return jsonify({
@@ -239,13 +265,13 @@ def api_match():
             'user_total_a': calc_total(grades_a), 'user_total_b': calc_total(grades_b),
             'res_a': do_match(score_a, grades_a, 'A'), 
             'res_b': do_match(score_b, grades_b, 'B'), 
-            'year': year
-                })
+ 'year': year
+ })
     elif school_type == 'voc':
         rows = query_all('SELECT school_name, major_name, school_attr, fee_type, batch, min_score FROM scores WHERE year=? AND school_type = "中职学校" AND min_score IS NOT NULL GROUP BY school_name, major_name ORDER BY min_score DESC', [year])
         score_5subj = (score_a or 0) - sport
         results = [{'school_name': r['school_name'], 'major_name': r['major_name'], 'school_attr': r['school_attr'], 'fee_type': r['fee_type'], 'batch': r['batch'], 'min_score': r['min_score'], 'diff': score_5subj - (r['min_score'] - sport)} for r in rows]
-        return jsonify({'score': score_a, 'rush': [r for r in results if -10 <= r['diff'] <= 10], 'stable': [r for r in results if 10 < r['diff'] <= 30], 'backup': [r for r in results if r['diff'] > 30], 'year': year, 'type': 'voc'})
+        return jsonify({'score': score_a, 'zhizhong': results, 'year': year, 'type': 'voc'})
     return jsonify({'error': 'Invalid school type'}), 400
 
 if __name__ == '__main__':

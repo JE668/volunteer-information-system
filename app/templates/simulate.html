@@ -48,14 +48,35 @@
                 </button>
             </div>
 
-            <!-- 结果区域 -->
-            <div class="lg:col-span-2">
-                <div id="emptyState" class="h-full flex flex-col items-center justify-center text-center p-12 border-2 border-dashed border-gray-200 rounded-2xl text-gray-400">
-                    <i class="fas fa-magic text-4xl mb-4 opacity-20"></i>
-                    <p>输入成绩并点击开始模拟<br>系统将根据总分及等级科目要求进行匹配</p>
-                </div>
+<!-- 结果区域 -->
+ <div class="lg:col-span-2">
+ <div id="emptyState" class="h-full flex flex-col items-center justify-center text-center p-12 border-2 border-dashed border-gray-200 rounded-2xl text-gray-400">
+ <i class="fas fa-magic text-4xl mb-4 opacity-20"></i>
+ <p>输入成绩并点击开始模拟<br>系统将根据总分及等级科目要求进行匹配</p>
+ </div>
 
-                <div id="resultsArea" class="hidden space-y-8">
+ <!-- C 等级警告信息 -->
+ <div id="cGradeWarning" class="hidden bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg mb-6">
+ <div class="flex">
+ <div class="flex-shrink-0">
+ <i class="fas fa-exclamation-triangle text-yellow-400"></i>
+ </div>
+ <div class="ml-3">
+ <p id="cGradeWarningText" class="text-sm text-yellow-700 font-medium"></p>
+ </div>
+ </div>
+ </div>
+
+ <!-- 中职学校推荐区域（A 类含 C 时显示） -->
+ <div id="zhizhongArea" class="hidden bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
+ <div class="bg-blue-50 px-4 py-3 border-b border-blue-100 flex justify-between items-center">
+ <span class="font-bold text-blue-700"><i class="fas fa-graduation-cap mr-2"></i>中职学校推荐</span>
+ <span class="text-xs text-blue-600">A 类考生可报考</span>
+ </div>
+ <div id="zhizhongList" class="divide-y"></div>
+ </div>
+
+ <div id="resultsArea" class="hidden space-y-8">
                     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <h3 class="text-xl font-bold text-gray-800">匹配结果分析</h3>
                         <div id="gradeDashboard" class="flex gap-3">
@@ -199,16 +220,44 @@ document.getElementById('simulateBtn').onclick = async () => {
             params.append('che_b', document.getElementById('grade_che').value);
         }
 
-        const res = await fetch(`/api/match?${params.toString()}`);
-        if (!res.ok) {
-            const errText = await res.text();
-            throw new Error(`服务器错误 (${res.status}): ${errText}`);
-        }
-        const data = await res.json();
-        if(data.error) return alert(data.error);
+const res = await fetch(`/api/match?${params.toString()}`);
+ if (!res.ok) {
+ const errText = await res.text();
+ throw new Error(`服务器错误 (${res.status}): ${errText}`);
+ }
+ const data = await res.json();
+ if(data.error) return alert(data.error);
 
-        document.getElementById('emptyState').classList.add('hidden');
-        document.getElementById('resultsArea').classList.remove('hidden');
+ document.getElementById('emptyState').classList.add('hidden');
+ 
+ // 处理 C 等级情况
+ const cGradeWarning = document.getElementById('cGradeWarning');
+ const cGradeWarningText = document.getElementById('cGradeWarningText');
+ const zhizhongArea = document.getElementById('zhizhongArea');
+ 
+ // 检查是否有 C 等级警告
+ if (data.has_c_grade && data.c_grade_note) {
+ cGradeWarning.classList.remove('hidden');
+ cGradeWarningText.textContent = data.c_grade_note;
+ 
+ // 如果是 A 类含 C 且可以报考中职，显示中职学校
+ if (data.can_apply_zhi_zhong && currentMode === 'A') {
+ zhizhongArea.classList.remove('hidden');
+ // 加载中职学校数据
+ loadZhizhongSchools(year, total);
+ } else {
+ zhizhongArea.classList.add('hidden');
+ // B 类含 C，隐藏普通高中结果区
+ document.getElementById('resultsArea').classList.add('hidden');
+ return; // 结束，不显示普通高中结果
+ }
+ } else {
+ // 没有 C 等级，正常显示
+ cGradeWarning.classList.add('hidden');
+ zhizhongArea.classList.add('hidden');
+ }
+ 
+ document.getElementById('resultsArea').classList.remove('hidden');
         
         const userTotal = currentMode === 'A' ? data.user_total_a : data.user_total_b;
         const dashboard = document.getElementById('gradeDashboard');
@@ -237,5 +286,66 @@ document.getElementById('simulateBtn').onclick = async () => {
 };
 
 renderGradeInputs();
+</script>
+
+<!-- 加载中职学校数据的函数 -->
+<script>
+async function loadZhizhongSchools(year, totalScore) {
+ try {
+ const params = new URLSearchParams();
+ params.append('year', year);
+ params.append('type', 'zz'); // 中职类型
+ 
+ const res = await fetch(`/api/match?${params.toString()}`);
+ if (!res.ok) return;
+ 
+ const data = await res.json();
+ const zhizhongList = document.getElementById('zhizhongList');
+ 
+ // 根据分数筛选可报考的中职学校（分差>0 的）
+ const applicable = [];
+ const notApplicable = [];
+ 
+ if (data.zhizhong && data.zhizhong.length > 0) {
+ data.zhizhong.forEach(s => {
+ if (totalScore >= s.min_score) {
+ applicable.push(s);
+ } else {
+ notApplicable.push(s);
+ }
+ });
+ 
+ applicable.sort((a, b) => b.min_score - a.min_score);
+ notApplicable.sort((a, b) => b.min_score - a.min_score);
+ 
+ const all = [...applicable, ...notApplicable];
+ 
+ if (all.length === 0) {
+ zhizhongList.innerHTML = '<div class="p-4 text-gray-400 text-sm italic text-center">暂无符合条件的中职学校</div>';
+ } else {
+ zhizhongList.innerHTML = all.slice(0, 10).map(s => `
+ <div class="p-4 flex justify-between items-center hover:bg-gray-50 transition">
+ <div>
+ <div class="font-bold text-gray-800">${s.school_name} - ${s.major_name || ''}</div>
+ <div class="text-xs text-gray-500">${s.school_attr} | ${s.fee_type} | ${s.batch}</div>
+ </div>
+ <div class="text-right">
+ <div class="font-mono font-bold ${totalScore >= s.min_score ? 'text-green-600' : 'text-red-600'}">
+ ${s.min_score}分
+ </div>
+ <div class="text-xs ${totalScore >= s.min_score ? 'text-green-600' : 'text-red-600'}">
+ ${totalScore >= s.min_score ? '可报考' : '分数不足'}
+ </div>
+ </div>
+ </div>
+ `).join('');
+ }
+ } else {
+ zhizhongList.innerHTML = '<div class="p-4 text-gray-400 text-sm italic text-center">暂无中职学校数据</div>';
+ }
+ } catch (e) {
+ console.error('加载中职学校失败:', e);
+ }
+}
 </script>
 {% endblock %}
