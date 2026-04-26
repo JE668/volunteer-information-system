@@ -126,7 +126,7 @@ def api_enrollment():
             'school_name': r['school_name'], 'school_attr': r['school_attr'], 'fee_type': r['fee_type'],
             'junior_school': r['junior_school'], 'min_score': quota_s, 'regular_min_score': reg_s,
             'diff': (reg_s - quota_s) if (quota_s and reg_s) else None, 'rank_order': r['rank_order'], 'source': r['source']
-        })
+                })
     return jsonify(result)
 
 @app.route('/api/schools')
@@ -172,45 +172,6 @@ def api_schools_by_batch():
     rows = query_all('SELECT DISTINCT high_school as school_name, school_attr, fee_type, MIN(min_score) as min_score FROM quota WHERE year=? AND min_score IS NOT NULL GROUP BY high_school ORDER BY min_score DESC', [year])
     for r in rows: result['提前批_指标生'].append({'school_name': r['school_name'], 'school_attr': r['school_attr'], 'fee_type': r['fee_type'], 'admission_type': '指标生', 'min_score': r['min_score'], 'min_score_5subj': r['min_score'] - sport})
     # 3. 港澳台
-def get_matches_inner(score, grades, plan_type='A', sport=50):
-    if not score: return {'rush': [], 'stable': [], 'backup': []}
-    score_5subj = score - sport
-    
-    # 完全解绑：不再根据 A/B 类过滤 fee_type
-    # 只筛选：普通高中 + 有分数线
-    sql = f'''
-        SELECT school_name, school_attr, fee_type, batch, min_score, subject_grade_req, subject_grade_total_req 
-        FROM scores 
-        WHERE year=? AND school_type = "普通高中" AND score_type = "普通高中" 
-        AND min_score IS NOT NULL 
-        GROUP BY school_name 
-        ORDER BY min_score DESC
-    '''
-    # 注意：这里使用 g.db 或通过参数传递，为了简单，我们在路由中调用 query_all
-    # 但 get_matches_inner 是全局函数，需要能够访问 query_all
-    rows = query_all(sql, [year]) # 假设 year 是全局或从某个地方获取，更好的做法是传参
-    
-    results = []
-    for r in rows:
-        # 分数计算：(用户总分 - 体育) - (学校线 - 体育) = 用户总分 - 学校线
-        diff = score - r['min_score'] 
-        grade_check = check_detailed_grade_req(grades, r.get('subject_grade_req'), r.get('subject_grade_total_req'), plan_type)
-        
-        results.append({
-            'school_name': r['school_name'], 'school_attr': r['school_attr'], 'fee_type': r['fee_type'], 
-            'batch': r['batch'], 'min_score': r['min_score'], 'diff': diff, 
-            'grade_pass': grade_check['pass'], 'grade_reason': grade_check['reason']
-        })
-    
-    rush = [r for r in results if -10 <= r['diff'] <= 10 and r['grade_pass']]
-    stable = [r for r in results if 10 < r['diff'] <= 30 and r['grade_pass']]
-    backup = [r for r in results if r['diff'] > 30 and r['grade_pass']]
-    
-    rush.sort(key=lambda x: x['diff'])
-    stable.sort(key=lambda x: x['diff'])
-    backup.sort(key=lambda x: -x['min_score']) 
-    return {'rush': rush, 'stable': stable, 'backup': backup}
-
 @app.route('/api/match')
 def api_match():
     year = request.args.get('year', 2025, type=int)
@@ -250,7 +211,7 @@ def api_match():
                 # 2. 计算纯学术分差: (用户-80) - (学校-50) = 用户 - 学校 - 30
                 diff = score - r['min_score'] - (sport_current - sport_line)
                 
-            results.append({
+                results.append({
                 'school_name': r['school_name'], 
                 'school_attr': r['school_attr'], 
                 'fee_type': r['fee_type'], 
@@ -260,7 +221,7 @@ def api_match():
                 'diff': diff, 
                 'grade_pass': True, 
                 'grade_reason': ''
-            })
+                })
         
         # 3. 根据纯学术分差值分档
         rush = [r for r in results if -10 <= r['diff'] <= 10]
@@ -279,7 +240,7 @@ def api_match():
             'res_a': do_match(score_a, grades_a, 'A'), 
             'res_b': do_match(score_b, grades_b, 'B'), 
             'year': year
-        })
+                })
     elif school_type == 'voc':
         rows = query_all('SELECT school_name, major_name, school_attr, fee_type, batch, min_score FROM scores WHERE year=? AND school_type = "中职学校" AND min_score IS NOT NULL GROUP BY school_name, major_name ORDER BY min_score DESC', [year])
         score_5subj = (score_a or 0) - sport
