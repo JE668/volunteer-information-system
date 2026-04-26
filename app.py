@@ -237,8 +237,8 @@ def api_match():
         # 2. SQL: 直接在数据库层面过滤 plan_type，确保绝对纯净
         # A 类用户 -> 仅查 'A 类计划'；B 类用户 -> 仅查 'B 类计划'
         target_plan = 'A 类计划' if p_type == 'A' else 'B 类计划'
-        sql = 'SELECT school_name, school_attr, fee_type, batch, plan_type, min_score, subject_grade_req, subject_grade_total_req FROM scores WHERE year=? AND school_type = "普通高中" AND score_type = "普通高中" AND plan_type = ? AND min_score IS NOT NULL ORDER BY min_score DESC'
-        rows = query_all(sql, [year, target_plan])
+        sql = 'SELECT school_name, school_attr, fee_type, batch, plan_type, min_score, subject_grade_req, subject_grade_total_req FROM scores WHERE year=? AND school_type = "普通高中" AND score_type = "普通高中" AND substr(plan_type, 1, 1) = ? AND min_score IS NOT NULL ORDER BY min_score DESC'
+        rows = query_all(sql, [year, target_plan[0]])
         
         results = []
         for r in rows:
