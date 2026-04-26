@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-中山中考数据导入脚本 v4 (重构版)
-适配 [中考分数线数据库.xlsx]
+数据导入脚本 v4 (重构版)
+适配 [分数线数据库.xlsx]
 """
 import sqlite3
 import pandas as pd
@@ -10,7 +10,7 @@ import os
 # 路径配置
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, 'data', 'zs_scores.db')
-DATA_FILE = os.getenv('DATA_FILE_PATH', 'data/中考分数线数据库.xlsx')
+DATA_FILE = os.getenv('DATA_FILE_PATH', 'data/分数线数据库.xlsx')
 
 def clean_score(val):
     if pd.isna(val) or val == '/': return None
@@ -104,7 +104,7 @@ def import_data(conn):
         subj_grade = clean_str(row['考查科目等级最低要求'])
         subj_total = clean_str(row['考查科目等级总分最低要求'])
         quality = clean_str(row['综合素质评价要求'])
-        total_req = clean_score(row['中考总分最低要求'])
+        total_req = clean_score(row['总分最低要求'])
         source = clean_str(row['分数来源'])
         
         if not school_name or not year: continue
