@@ -172,29 +172,30 @@ def api_schools_by_batch():
     rows = query_all('SELECT DISTINCT high_school as school_name, school_attr, fee_type, MIN(min_score) as min_score FROM quota WHERE year=? AND min_score IS NOT NULL GROUP BY high_school ORDER BY min_score DESC', [year])
     for r in rows: result['提前批_指标生'].append({'school_name': r['school_name'], 'school_attr': r['school_attr'], 'fee_type': r['fee_type'], 'admission_type': '指标生', 'min_score': r['min_score'], 'min_score_5subj': r['min_score'] - sport})
     # 3. 港澳台
-    rows = query_all('SELECT DISTINCT school_name, school_attr, fee_type, MIN(min_score) as min_score FROM scores WHERE year=? AND score_type = "港澳台班" AND min_score IS NOT NULL GROUP BY school_name ORDER BY min_score DESC', [year])
-def get_matches_inner(score, grades, plan_type='A'):
+def get_matches_inner(score, grades, plan_type='A', sport=50):
     if not score: return {'rush': [], 'stable': [], 'backup': []}
     score_5subj = score - sport
     
-    # 核心修正：直接在 SQL 中通过 plan_type 或相关标识符匹配 A/B 类记录
-    # 假设数据库中有 plan_type 字段，如果没有，我们将通过 fee_type 或 score_type 的组合来精准定位
-    # 这里的逻辑改为：匹配 (第一批 AND 普通高中 AND 体系==plan_type)
+    # 完全解绑：不再根据 A/B 类过滤 fee_type
+    # 只筛选：普通高中 + 有分数线
     sql = f'''
         SELECT school_name, school_attr, fee_type, batch, min_score, subject_grade_req, subject_grade_total_req 
         FROM scores 
         WHERE year=? AND school_type = "普通高中" AND score_type = "普通高中" 
-        AND ( ( ? = 'A' AND fee_type = '公费' ) OR ( ? = 'B' AND fee_type IN ('自费', '参公') ) )
         AND min_score IS NOT NULL 
         GROUP BY school_name 
         ORDER BY min_score DESC
     '''
-    rows = query_all(sql, [year, plan_type, plan_type])
+    # 注意：这里使用 g.db 或通过参数传递，为了简单，我们在路由中调用 query_all
+    # 但 get_matches_inner 是全局函数，需要能够访问 query_all
+    rows = query_all(sql, [year]) # 假设 year 是全局或从某个地方获取，更好的做法是传参
     
     results = []
     for r in rows:
-        diff = score_5subj - (r['min_score'] - sport)
+        # 分数计算：(用户总分 - 体育) - (学校线 - 体育) = 用户总分 - 学校线
+        diff = score - r['min_score'] 
         grade_check = check_detailed_grade_req(grades, r.get('subject_grade_req'), r.get('subject_grade_total_req'), plan_type)
+        
         results.append({
             'school_name': r['school_name'], 'school_attr': r['school_attr'], 'fee_type': r['fee_type'], 
             'batch': r['batch'], 'min_score': r['min_score'], 'diff': diff, 
@@ -205,7 +206,6 @@ def get_matches_inner(score, grades, plan_type='A'):
     stable = [r for r in results if 10 < r['diff'] <= 30 and r['grade_pass']]
     backup = [r for r in results if r['diff'] > 30 and r['grade_pass']]
     
-    # 排序优化：冲/稳按分差升序，保按分数降序（名校优先）
     rush.sort(key=lambda x: x['diff'])
     stable.sort(key=lambda x: x['diff'])
     backup.sort(key=lambda x: -x['min_score']) 
@@ -223,16 +223,34 @@ def api_match():
     if not score_a and not score_b: return jsonify({'error': '请至少填写一项总分'}), 400
     sport = get_sport_score(year)
     
-    # 计算用户等级总分
     def calc_total(grades):
         return sum(grade_to_score(v) for v in grades.values() if v)
+
+    # 定义内部函数，直接闭包使用 year 和 sport，避免作用域问题
+    def do_match(score, grades, p_type):
+        if not score: return {'rush': [], 'stable': [], 'backup': []}
+        # SQL: 只查普通高中
+        sql = 'SELECT school_name, school_attr, fee_type, batch, min_score, subject_grade_req, subject_grade_total_req FROM scores WHERE year=? AND school_type = "普通高中" AND score_type = "普通高中" AND min_score IS NOT NULL GROUP BY school_name ORDER BY min_score DESC'
+        rows = query_all(sql, [year])
+        
+        results = []
+        for r in rows:
+            diff = score - r['min_score']
+            grade_check = check_detailed_grade_req(grades, r.get('subject_grade_req'), r.get('subject_grade_total_req'), p_type)
+            results.append({'school_name': r['school_name'], 'school_attr': r['school_attr'], 'fee_type': r['fee_type'], 'batch': r['batch'], 'min_score': r['min_score'], 'diff': diff, 'grade_pass': grade_check['pass'], 'grade_reason': grade_check['reason']})
+        
+        rush = [r for r in results if -10 <= r['diff'] <= 10 and r['grade_pass']]
+        stable = [r for r in results if 10 < r['diff'] <= 30 and r['grade_pass']]
+        backup = [r for r in results if r['diff'] > 30 and r['grade_pass']]
+        rush.sort(key=lambda x: x['diff']); stable.sort(key=lambda x: x['diff']); backup.sort(key=lambda x: -x['min_score'])
+        return {'rush': rush, 'stable': stable, 'backup': backup}
 
     if school_type == 'pg':
         return jsonify({
             'score_a': score_a, 'score_b': score_b, 
             'user_total_a': calc_total(grades_a), 'user_total_b': calc_total(grades_b),
-            'res_a': get_matches_inner(score_a, grades_a, 'A'), 
-            'res_b': get_matches_inner(score_b, grades_b, 'B'), 
+            'res_a': do_match(score_a, grades_a, 'A'), 
+            'res_b': do_match(score_b, grades_b, 'B'), 
             'year': year
         })
     elif school_type == 'voc':

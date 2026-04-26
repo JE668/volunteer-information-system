@@ -170,56 +170,65 @@ const renderList = (list, elementId) => {
 };
 
 document.getElementById('simulateBtn').onclick = async () => {
-    const year = document.getElementById('yearSelect').value;
-    const total = document.getElementById('totalScore').value;
-    if(!total) return alert('请输入总分');
+    try {
+        const year = document.getElementById('yearSelect').value;
+        const total = document.getElementById('totalScore').value;
+        if(!total) return alert('请输入总分');
 
-    const params = new URLSearchParams();
-    params.append('year', year);
-    params.append('type', 'pg');
+        const params = new URLSearchParams();
+        params.append('year', year);
+        params.append('type', 'pg');
 
-    if(currentMode === 'A') {
-        params.append('score_a', total);
-        params.append('bio_a', document.getElementById('grade_bio').value);
-        params.append('geo_a', document.getElementById('grade_geo').value);
-        params.append('his_a', document.getElementById('grade_his').value);
-        params.append('pol_a', document.getElementById('grade_pol').value);
-    } else {
-        params.append('score_b', total);
-        params.append('bio_b', document.getElementById('grade_bio').value);
-        params.append('geo_b', document.getElementById('grade_geo').value);
-        params.append('phy_b', document.getElementById('grade_phy').value);
-        params.append('che_b', document.getElementById('grade_che').value);
+        if(currentMode === 'A') {
+            params.append('score_a', total);
+            params.append('bio_a', document.getElementById('grade_bio').value);
+            params.append('geo_a', document.getElementById('grade_geo').value);
+            params.append('his_a', document.getElementById('grade_his').value);
+            params.append('pol_a', document.getElementById('grade_pol').value);
+        } else {
+            params.append('score_b', total);
+            params.append('bio_b', document.getElementById('grade_bio').value);
+            params.append('geo_b', document.getElementById('grade_geo').value);
+            params.append('phy_b', document.getElementById('grade_phy').value);
+            params.append('che_b', document.getElementById('grade_che').value);
+        }
+
+        const res = await fetch(`/api/match?${params.toString()}`);
+        if (!res.ok) {
+            const errText = await res.text();
+            throw new Error(`服务器错误 (${res.status}): ${errText}`);
+        }
+        const data = await res.json();
+        if(data.error) return alert(data.error);
+
+        document.getElementById('emptyState').classList.add('hidden');
+        document.getElementById('resultsArea').classList.remove('hidden');
+        
+        const userTotal = currentMode === 'A' ? data.user_total_a : data.user_total_b;
+        const dashboard = document.getElementById('gradeDashboard');
+        dashboard.innerHTML = `
+            <div class="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold">
+                等级总分: ${userTotal} 分
+            </div>
+            <div class="px-3 py-1 ${userTotal >= 12 ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'} rounded-full text-xs font-bold">
+                ${userTotal >= 12 ? '满足绝大多数要求' : '部分学校要求较高'}
+            </div>
+        `;
+
+        allData = currentMode === 'A' ? data.res_a : data.res_b;
+        
+        renderList(allData.rush.slice(0, 4), 'rushList');
+        renderList(allData.stable.slice(0, 4), 'stableList');
+        renderList(allData.backup.slice(0, 4), 'backupList');
+        
+        document.getElementById('btnAllRush').innerText = allData.rush.length > 4 ? '显示全部' : '全部已显示';
+        document.getElementById('btnAllStable').innerText = allData.stable.length > 4 ? '显示全部' : '全部已显示';
+        document.getElementById('btnAllBackup').innerText = allData.backup.length > 4 ? '显示全部' : '全部已显示';
+    } catch (e) {
+        console.error(e);
+        alert('模拟请求失败: ' + e.message);
     }
-
-    const res = await fetch(`/api/match?${params.toString()}`);
-    const data = await res.json();
-    if(data.error) return alert(data.error);
-
-    document.getElementById('emptyState').classList.add('hidden');
-    document.getElementById('resultsArea').classList.remove('hidden');
-    
-    const userTotal = currentMode === 'A' ? data.user_total_a : data.user_total_b;
-    const dashboard = document.getElementById('gradeDashboard');
-    dashboard.innerHTML = `
-        <div class="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold">
-            等级总分: ${userTotal} 分
-        </div>
-        <div class="px-3 py-1 ${userTotal >= 12 ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'} rounded-full text-xs font-bold">
-            ${userTotal >= 12 ? '满足绝大多数要求' : '部分学校要求较高'}
-        </div>
-    `;
-
-    allData = currentMode === 'A' ? data.res_a : data.res_b;
-    
-    renderList(allData.rush.slice(0, 4), 'rushList');
-    renderList(allData.stable.slice(0, 4), 'stableList');
-    renderList(allData.backup.slice(0, 4), 'backupList');
-    
-    // 更新按钮文字
-    document.getElementById('btnAllRush').innerText = allData.rush.length > 4 ? '显示全部' : '全部已显示';
-    document.getElementById('btnAllStable').innerText = allData.stable.length > 4 ? '显示全部' : '全部已显示';
-    document.getElementById('btnAllBackup').innerText = allData.backup.length > 4 ? '显示全部' : '全部已显示';
+};
 };
 
 renderGradeInputs();
