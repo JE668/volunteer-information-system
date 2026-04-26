@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 从 Excel 导入分数线数据到 SQLite 数据库
-为普通高中创建 A 类计划和 B 计划两份记录
+只为"第一批 - 普通高中"创建 A 类计划和 B 类计划
 """
 
 import pandas as pd
@@ -95,29 +95,15 @@ def import_data():
     for idx, row in df.iterrows():
         # 确定 score_type（根据计划类别和学校类别）
         plan_cat = row['计划类别']
-        school_cat = row['school_type']
+        batch = row['批次'] if '批次' in df.columns else ''
+        school_type = row['school_type']
         
-        # 确定要插入的计划类型列表
-        if plan_cat == '中职学校':
-            plan_types = ['中职学校']
-        elif plan_cat == '指标生':
-            plan_types = ['指标生']
-        elif plan_cat == '艺术生':
-            plan_types = ['艺术生']
-        elif plan_cat == '学科类自主招生':
-            plan_types = ['学科类自主招生']
-        elif plan_cat == '港澳台班':
-            plan_types = ['港澳台班']
-        elif plan_cat == '外国语班':
-            plan_types = ['外国语班']
-        elif plan_cat == '3+4 中本贯通':
-            plan_types = ['3+4 中本贯通']
-        elif plan_cat == '普通高中':
-            # 普通高中：创建 A 类计划和 B 类计划两份记录
+        # 只有"第一批 - 普通高中"才创建 A 类计划和 B 类计划
+        if batch == '第一批' and school_type == '普通高中' and plan_cat == '普通高中':
             plan_types = ['A 类计划', 'B 类计划']
         else:
-            # 其他情况：创建 A 类计划和 B 类计划
-            plan_types = ['A 类计划', 'B 类计划']
+            # 其他情况保持原有计划类别
+            plan_types = [plan_cat]
         
         for p_type in plan_types:
             # 确定 score_type
@@ -182,15 +168,20 @@ def import_data():
     for row in cursor.fetchall():
         print(f"  {row[0] or 'NULL'}: {row[1]}")
     
-    print("\n=== 普通高中示例数据（A 类计划） ===")
-    cursor.execute("SELECT school_name, plan_type, school_attr, fee_type, min_score FROM scores WHERE school_type='普通高中' AND plan_type='A 类计划' LIMIT 5")
+    print("\n=== A/B 类计划分布 ===")
+    cursor.execute("SELECT batch, school_type, plan_type, COUNT(*) FROM scores WHERE plan_type IN ('A 类计划', 'B 类计划') GROUP BY batch, school_type, plan_type ORDER BY batch, school_type, plan_type")
     for row in cursor.fetchall():
-        print(f"  {row[0]} | {row[1]} | {row[2]} | {row[3]} | {row[4]}")
+        print(f"  {row[0]} | {row[1]} | {row[2]}: {row[3]}条")
+    
+    print("\n=== 普通高中示例数据（A 类计划） ===")
+    cursor.execute("SELECT school_name, batch, plan_type, school_attr, fee_type, min_score FROM scores WHERE school_type='普通高中' AND plan_type='A 类计划' LIMIT 5")
+    for row in cursor.fetchall():
+        print(f"  {row[0]} | {row[1]} | {row[2]} | {row[3]} | {row[4]} | {row[5]}")
     
     print("\n=== 普通高中示例数据（B 类计划） ===")
-    cursor.execute("SELECT school_name, plan_type, school_attr, fee_type, min_score FROM scores WHERE school_type='普通高中' AND plan_type='B 类计划' LIMIT 5")
+    cursor.execute("SELECT school_name, batch, plan_type, school_attr, fee_type, min_score FROM scores WHERE school_type='普通高中' AND plan_type='B 类计划' LIMIT 5")
     for row in cursor.fetchall():
-        print(f"  {row[0]} | {row[1]} | {row[2]} | {row[3]} | {row[4]}")
+        print(f"  {row[0]} | {row[1]} | {row[2]} | {row[3]} | {row[4]} | {row[5]}")
     
     print("\n=== 中职学校示例数据 ===")
     cursor.execute("SELECT school_name, plan_type, school_attr, fee_type, major_name, min_score FROM scores WHERE school_type='中职学校' LIMIT 5")
