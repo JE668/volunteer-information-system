@@ -234,9 +234,11 @@ def api_match():
         sport_current = 80 
         sport_line = get_sport_score(year) 
         
-        # SQL: 移除 GROUP BY school_name，确保拿到该校所有不同类型的计划记录
-        sql = 'SELECT school_name, school_attr, fee_type, batch, min_score, subject_grade_req, subject_grade_total_req FROM scores WHERE year=? AND school_type = "普通高中" AND score_type = "普通高中" AND min_score IS NOT NULL ORDER BY min_score DESC'
-        rows = query_all(sql, [year])
+        # 2. SQL: 直接在数据库层面过滤 plan_type，确保绝对纯净
+        # A 类用户 -> 仅查 'A 类计划'；B 类用户 -> 仅查 'B 类计划'
+        target_plan = 'A 类计划' if p_type == 'A' else 'B 类计划'
+        sql = 'SELECT school_name, school_attr, fee_type, batch, plan_type, min_score, subject_grade_req, subject_grade_total_req FROM scores WHERE year=? AND school_type = "普通高中" AND score_type = "普通高中" AND plan_type = ? AND min_score IS NOT NULL ORDER BY min_score DESC'
+        rows = query_all(sql, [year, target_plan])
         
         results = []
         for r in rows:
@@ -248,16 +250,17 @@ def api_match():
                 # 2. 计算纯学术分差: (用户-80) - (学校-50) = 用户 - 学校 - 30
                 diff = score - r['min_score'] - (sport_current - sport_line)
                 
-                results.append({
-                    'school_name': r['school_name'], 
-                    'school_attr': r['school_attr'], 
-                    'fee_type': r['fee_type'], 
-                    'batch': r['batch'], 
-                    'min_score': r['min_score'], 
-                    'diff': diff, 
-                    'grade_pass': True, 
-                    'grade_reason': ''
-                })
+            results.append({
+                'school_name': r['school_name'], 
+                'school_attr': r['school_attr'], 
+                'fee_type': r['fee_type'], 
+                'batch': r['batch'], 
+                'plan_type': r['plan_type'],
+                'min_score': r['min_score'], 
+                'diff': diff, 
+                'grade_pass': True, 
+                'grade_reason': ''
+            })
         
         # 3. 根据纯学术分差值分档
         rush = [r for r in results if -10 <= r['diff'] <= 10]
