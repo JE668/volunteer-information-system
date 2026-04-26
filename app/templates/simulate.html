@@ -258,8 +258,14 @@ if (data.res_a && data.res_a.has_c_grade && data.res_a.c_grade_note) {
 } else {
  // 没有 C 等级，正常显示
  cGradeWarning.classList.add('hidden');
- zhizhongArea.classList.add('hidden');
  resultsArea.classList.remove('hidden');
+ // A 类用户显示中职学校推荐
+ if (currentMode === 'A') {
+ zhizhongArea.classList.remove('hidden');
+ loadZhizhongSchools(year, total);
+ } else {
+ zhizhongArea.classList.add('hidden');
+ }
 }
 
 // 正常情况：显示普通高中匹配结果
@@ -276,12 +282,6 @@ ${userTotal >= 12 ? '满足绝大多数要求' : '部分学校要求较高'}
 
 const resultData = currentMode === 'A' ? data.res_a : data.res_b;
 allData = resultData;
-
-// A 类用户且不含 C 时，也显示中职学校推荐
-if (currentMode === 'A' && data.res_a && data.res_a.can_apply_zhi_zhong) {
- zhizhongArea.classList.remove('hidden');
- loadZhizhongSchools(year, total);
-}
  
 renderList(allData.rush.slice(0, 4), 'rushList');
  renderList(allData.stable.slice(0, 4), 'stableList');
