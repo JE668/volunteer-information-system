@@ -292,14 +292,17 @@ renderList(allData.rush.slice(0, 4), 'rushList');
  
  document.getElementById('btnAllRush').innerText = allData.rush.length > 4 ? '显示全部' : '全部已显示';
  document.getElementById('btnAllStable').innerText = allData.stable.length > 4 ? '显示全部' : '全部已显示';
- document.getElementById('btnAllBackup').innerText = allData.backup.length > 4 ? '显示全部' : '全部已显示';
-    } catch (e) {
-        console.error(e);
-        alert('模拟请求失败: ' + e.message);
-    }
+document.getElementById('btnAllBackup').innerText = allData.backup.length > 4 ? '显示全部' : '全部已显示';
+ } catch (e) {
+ console.error(e);
+ alert('模拟请求失败：' + e.message);
+ }
 };
 
-renderGradeInputs();
+// 页面加载完成后初始化
+document.addEventListener('DOMContentLoaded', function() {
+ renderGradeInputs();
+});
 </script>
 
 <!-- 加载中职学校数据的函数 -->
