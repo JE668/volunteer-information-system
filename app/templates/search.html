@@ -3,7 +3,7 @@
 {% block content %}
 <div class="max-w-5xl mx-auto">
     <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 mb-8">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">选择年份</label>
                 <select id="yearSelect" class="w-full p-2 border rounded-md outline-none focus:ring-2 focus:ring-indigo-500">
@@ -20,8 +20,37 @@
                     <option value="all">全部</option>
                 </select>
             </div>
-            <div class="flex items-end">
-                <button id="searchBtn" class="w-full gradient-bg text-white font-bold py-2 rounded-md hover:opacity-90 transition">查询学校</button>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">学校属性</label>
+                <select id="attrSelect" class="w-full p-2 border rounded-md outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="">全部</option>
+                    <option value="省重点">省重点</option>
+                    <option value="市重点">市重点</option>
+                    <option value="区重点">区重点</option>
+                    <option value="普通">普通</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">收费类型</label>
+                <select id="feeSelect" class="w-full p-2 border rounded-md outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="">全部</option>
+                    <option value="公费">公费</option>
+                    <option value="自费">自费</option>
+                    <option value="参公">参公</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">批次筛选</label>
+                <select id="batchSelect" class="w-full p-2 border rounded-md outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="">全部批次</option>
+                    <option value="提前批">提前批</option>
+                    <option value="第一批">第一批</option>
+                    <option value="第二批">第二批</option>
+                    <option value="第三批">第三批</option>
+                </select>
+            </div>
+            <div class="md:col-span-5 flex justify-end mt-2">
+                <button id="searchBtn" class="w-full md:w-40 gradient-bg text-white font-bold py-2 rounded-md hover:opacity-90 transition">查询学校</button>
             </div>
         </div>
     </div>
@@ -32,13 +61,14 @@
                 <tr>
                     <th class="px-6 py-4 border-b">学校名称</th>
                     <th class="px-6 py-4 border-b">属性</th>
-                    <th class="px-6 py-4 border-b">收费类型</th>
+                    <th class="px-6 py-4 border-b">收费</th>
                     <th class="px-6 py-4 border-b">批次</th>
+                    <th class="px-6 py-4 border-b">类型</th>
                     <th class="px-6 py-4 border-b text-right">出档分数线</th>
                 </tr>
             </thead>
             <tbody id="schoolList" class="divide-y text-gray-700">
-                <tr><td colspan="5" class="px-6 py-12 text-center text-gray-400 italic">请选择条件并点击查询</td></tr>
+                <tr><td colspan="6" class="px-6 py-12 text-center text-gray-400 italic">请选择条件并点击查询</td></tr>
             </tbody>
         </table>
     </div>
@@ -48,7 +78,11 @@
 document.getElementById('searchBtn').onclick = async () => {
     const year = document.getElementById('yearSelect').value;
     const type = document.getElementById('typeSelect').value;
-    const res = await fetch(`/api/schools?year=${year}&type=${type}`);
+    const attr = document.getElementById('attrSelect').value;
+    const fee = document.getElementById('feeSelect').value;
+    const batch = document.getElementById('batchSelect').value;
+    
+    const res = await fetch(`/api/schools?year=${year}&type=${type}&attr=${attr}&fee=${fee}&batch=${batch}`);
     const data = await res.json();
     
     const list = document.getElementById('schoolList');
@@ -58,9 +92,10 @@ document.getElementById('searchBtn').onclick = async () => {
             <td class="px-6 py-4 text-sm">${s.school_attr || '-'}</td>
             <td class="px-6 py-4 text-sm">${s.fee_type || '-'}</td>
             <td class="px-6 py-4 text-sm">${s.batch || '-'}</td>
+            <td class="px-6 py-4 text-xs text-gray-500">${s.score_type || '-'}</td>
             <td class="px-6 py-4 text-right font-mono font-bold text-indigo-600">${s.min_score}分</td>
         </tr>
-    `).join('') : '<tr><td colspan="5" class="px-6 py-12 text-center text-gray-400 italic">未找到相关数据</td></tr>';
+    `).join('') : '<tr><td colspan="6" class="px-6 py-12 text-center text-gray-400 italic">未找到相关数据</td></tr>';
 };
 </script>
 {% endblock %}
