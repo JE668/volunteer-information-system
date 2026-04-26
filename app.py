@@ -124,7 +124,7 @@ def api_schools_by_batch():
     
     # 5. 第一批 B类
     rows = query_all('SELECT DISTINCT school_name, school_attr, fee_type, MIN(min_score) as min_score FROM scores WHERE year=? AND batch="第一批" AND score_type="普通高中" AND fee_type IN ("自费", "参公") AND min_score IS NOT NULL GROUP BY school_name ORDER BY min_score DESC', [year])
-    for r in rows: result['第一批_B类'].append({'school_name': r['school_name'], 'school_attr': r['fee_type'], 'admission_type': 'B类计划', 'min_score': r['min_score'], 'min_score_5subj': r['min_score'] - sport})
+    for r in rows: result['第一批_B类'].append({'school_name': r['school_name'], 'school_attr': r['school_attr'], 'fee_type': r['fee_type'], 'admission_type': 'B类计划', 'min_score': r['min_score'], 'min_score_5subj': r['min_score'] - sport})
     
     # 6. 中职试点
     rows = query_all('SELECT DISTINCT school_name, major_name, school_attr, fee_type, MIN(min_score) as min_score FROM scores WHERE year=? AND batch="第一批" AND score_type LIKE "%试点%" AND min_score IS NOT NULL GROUP BY school_name, major_name ORDER BY min_score DESC', [year])
@@ -136,7 +136,7 @@ def api_schools_by_batch():
     
     # 8. 外市中职
     rows = query_all('SELECT DISTINCT school_name, school_attr, fee_type, MIN(min_score) as min_score FROM scores WHERE year=? AND (batch="第三批" OR score_type LIKE "%外市%") AND score_type NOT LIKE "%试点%" AND min_score IS NOT NULL GROUP BY school_name ORDER BY min_score DESC', [year])
-    for r in rows: result['第三批_外市中职'].append({'school_name': r['school_name'], 'school_attr': r['school_attr'], 'fee_type': r['fee_type'], 'admission_type': '外市中s中职', 'min_score': r['min_score'], 'min_score_5subj': r['min_score'] - sport})
+    for r in rows: result['第三批_外市中职'].append({'school_name': r['school_name'], 'school_attr': r['school_attr'], 'fee_type': r['fee_type'], 'admission_type': '外市中职', 'min_score': r['min_score'], 'min_score_5subj': r['min_score'] - sport})
     
     return jsonify(result)
 
