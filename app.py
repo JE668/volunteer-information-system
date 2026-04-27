@@ -240,8 +240,9 @@ def api_match():
                     'fee_type': r['fee_type'], 
                     'batch': r['batch'], 
                     'plan_type': r['plan_type'],
-                    'min_score': r['min_score'], 
-                    'diff': diff, 
+'min_score': r['min_score'],
+ 'min_score_2026': r['min_score'] + 30 if r['min_score'] else None, # 2026年分数（+30）
+ 'diff': diff,
                     'grade_pass': True, 
                     'grade_reason': ''
                 })

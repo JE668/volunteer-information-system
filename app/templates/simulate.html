@@ -183,22 +183,32 @@ function toggleAll(type) {
 }
 
 const renderList = (list, elementId) => {
-    const el = document.getElementById(elementId);
-    el.innerHTML = list.length ? list.map(s => `
-        <div class="p-4 flex justify-between items-center hover:bg-gray-50 transition">
-            <div>
-                <div class="flex items-center gap-2">
-                    <div class="font-bold text-gray-800">${s.school_name}</div>
-                    <span class="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded-full">等级: 通过</span>
-                </div>
-                <div class="text-xs text-gray-500">${s.school_attr} | ${s.fee_type} | ${s.batch} | ${s.plan_type || ''}</div>
-            </div>
-            <div class="text-right">
-                <div class="font-mono font-bold text-indigo-600">${s.min_score}分</div>
-                <div class="text-xs ${s.diff > 0 ? 'text-green-600' : 'text-red-600'} font-medium">分差: ${s.diff > 0 ? '+' : ''}${s.diff}</div>
-            </div>
-        </div>
-    `).join('') : '<div class="p-4 text-gray-400 text-sm italic text-center">暂无符合条件的学校</div>';
+ const el = document.getElementById(elementId);
+ el.innerHTML = list.length ? list.map(s => `
+ <div class="p-4 flex justify-between items-center hover:bg-gray-50 transition">
+ <div>
+ <div class="flex items-center gap-2">
+ <div class="font-bold text-gray-800">${s.school_name}</div>
+ <span class="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded-full">等级: 通过</span>
+ </div>
+ <div class="text-xs text-gray-500">${s.school_attr} | ${s.fee_type} | ${s.batch} | ${s.plan_type || ''}</div>
+ </div>
+ <div class="text-right">
+ <div class="flex items-center gap-2">
+ <div class="flex flex-col items-end">
+ <div class="font-mono font-bold text-indigo-600">${s.min_score}分</div>
+ <div class="text-[10px] text-gray-400">2025年</div>
+ </div>
+ <div class="text-gray-300">|</div>
+ <div class="flex flex-col items-end">
+ <div class="font-mono font-bold text-purple-600">${s.min_score_2026}分</div>
+ <div class="text-[10px] text-gray-400">2026年(+30)</div>
+ </div>
+ </div>
+ <div class="text-xs ${s.diff > 0 ? 'text-green-600' : 'text-red-600'} font-medium">分差: ${s.diff > 0 ? '+' : ''}${s.diff}</div>
+ </div>
+ </div>
+ `).join('') : '<div class="p-4 text-gray-400 text-sm italic text-center">暂无符合条件的学校</div>';
 };
 
 document.getElementById('simulateBtn').onclick = async () => {
