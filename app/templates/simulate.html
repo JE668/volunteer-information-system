@@ -320,7 +320,12 @@ async function loadZhizhongSchools(year, totalScore) {
  const params = new URLSearchParams();
  params.append('year', year);
  params.append('type', 'voc'); // 中职类型
- 
+ params.append('score_a', totalScore); // A类总分用于中职匹配
+ params.append('bio_a', 'A'); // 传入虚拟等级避免C类检测
+ params.append('geo_a', 'A');
+ params.append('his_a', 'A');
+ params.append('pol_a', 'A');
+
  const res = await fetch(`/api/match?${params.toString()}`);
  if (!res.ok) {
  console.error('加载中职学校失败:', res.status);
