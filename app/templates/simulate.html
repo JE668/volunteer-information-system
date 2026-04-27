@@ -242,7 +242,7 @@ const zhizhongArea = document.getElementById('zhizhongArea');
 const resultsArea = document.getElementById('resultsArea');
 
 // 根据当前模式获取对应的结果数据
-const resultData = currentMode === 'A' ? data.res_a : data.res_b;
+let resultData = currentMode === 'A' ? data.res_a : data.res_b;
 
 // 检查是否有 C 等级警告
 if (resultData && resultData.has_c_grade && resultData.c_grade_note) {
