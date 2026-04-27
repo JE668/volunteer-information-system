@@ -366,22 +366,31 @@ async function loadZhizhongSchools(year, totalScore) {
  if (all.length === 0) {
  zhizhongList.innerHTML = '<div class="p-4 text-gray-400 text-sm italic text-center">暂无符合条件的中职学校</div>';
  } else {
- zhizhongList.innerHTML = all.slice(0, 10).map(s => `
+ zhizhongList.innerHTML = all.slice(0, 10).map(s => {
+ // 提前批：major_name为空，根据plan_type区分
+ let majorDisplay = s.major_name;
+ if (s.batch === '提前批') {
+ majorDisplay = s.plan_type === '3+4中本贯通' ? '3+4中本贯通' : '试点专业';
+ }
+ const batchDisplay = s.batch === '提前批' ? '提前批（' + majorDisplay + '）' : s.batch + ' - ' + (s.major_name || '');
+
+ return `
  <div class="p-4 flex justify-between items-center hover:bg-gray-50 transition">
  <div>
- <div class="font-bold text-gray-800">${s.school_name} - ${s.major_name || ''}</div>
+ <div class="font-bold text-gray-800">${s.school_name} - ${majorDisplay}</div>
  <div class="text-xs text-gray-500">${s.school_attr} | ${s.fee_type} | ${s.batch}</div>
  </div>
  <div class="text-right">
  <div class="font-mono font-bold ${totalScore >= s.min_score ? 'text-green-600' : 'text-red-600'}">
- ${s.min_score}分
+ 2025年${s.min_score}分 | 2026年${(s.min_score_2026 || s.min_score + 30)}分
  </div>
  <div class="text-xs ${totalScore >= s.min_score ? 'text-green-600' : 'text-red-600'}">
  ${totalScore >= s.min_score ? '可报考' : '分数不足'}
  </div>
  </div>
  </div>
- `).join('');
+ `;
+ }).join('');
  }
  } else {
  zhizhongList.innerHTML = '<div class="p-4 text-gray-400 text-sm italic text-center">暂无中职学校数据</div>';

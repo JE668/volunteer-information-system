@@ -269,11 +269,11 @@ def api_match():
  'year': year
  })
     elif school_type == 'voc':
-        rows = query_all('SELECT school_name, major_name, school_attr, fee_type, batch, min_score FROM scores WHERE year=? AND school_type = "中职学校" AND min_score IS NOT NULL GROUP BY school_name, major_name ORDER BY min_score DESC', [year])
+        rows = query_all('SELECT school_name, major_name, school_attr, fee_type, batch, plan_type, min_score FROM scores WHERE year=? AND school_type = "中职学校" AND min_score IS NOT NULL GROUP BY school_name, major_name ORDER BY min_score DESC', [year])
         score_5subj = (score_a or 0) - sport
-        results = [{'school_name': r['school_name'], 'major_name': r['major_name'], 'school_attr': r['school_attr'], 'fee_type': r['fee_type'], 'batch': r['batch'], 'min_score': r['min_score'], 'diff': score_5subj - (r['min_score'] - sport)} for r in rows]
+        results = [{'school_name': r['school_name'], 'major_name': r['major_name'], 'school_attr': r['school_attr'], 'fee_type': r['fee_type'], 'batch': r['batch'], 'plan_type': r['plan_type'], 'min_score': r['min_score'], 'min_score_2026': r['min_score'] + 30 if r['min_score'] else None, 'diff': score_5subj - (r['min_score'] - sport)} for r in rows]
         return jsonify({'score': score_a, 'zhizhong': results, 'year': year, 'type': 'voc'})
-    return jsonify({'error': 'Invalid school type'}), 400
+        return jsonify({'error': 'Invalid school type'}), 400
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
