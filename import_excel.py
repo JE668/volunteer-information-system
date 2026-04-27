@@ -80,26 +80,32 @@ def import_data():
     # 插入新数据
     print("插入新数据...")
     insert_sql = '''
-    INSERT INTO scores (
-        year, batch, plan_type, score_type, school_type, school_code, school_name,
-        school_attr, fee_type, major_code, major_name,
-        junior_school, min_score, rank_order, total_score_req,
-        subject_grade_req, subject_grade_total_req, quality_eval_req,
-        source, policy_note, remark
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     INSERT INTO scores (
+     year, batch, plan_type, score_type, school_type, school_code, school_name,
+     school_attr, fee_type, major_code, major_name,
+     junior_school, min_score, rank_order, total_score_req,
+     subject_grade_req, subject_grade_total_req, quality_eval_req,
+     source, policy_note, remark
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     '''
     
     rows_to_insert = []
     insert_count = 0
     
     for idx, row in df.iterrows():
-        # 确定 score_type（根据计划类别和学校类别）
+        # 确定 plan_type（根据计划类别和计划属性）
         plan_cat = row['计划类别']
-        batch = row['批次'] if '批次' in df.columns else ''
+        plan_attr = row['计划属性'] if pd.notna(row['计划属性']) else ''
+        batch = row['批次'] if pd.notna(row['批次']) else ''
         school_type = row['school_type']
         
-        # 只有"第一批 - 普通高中"才创建 A 类计划和 B 类计划
-        if batch == '第一批' and school_type == '普通高中' and plan_cat == '普通高中':
+        # 如果计划属性已经是 A类计划 或 B类计划，使用它
+        if 'A 类计划' in plan_attr or 'A类计划' in plan_attr:
+            plan_types = ['A 类计划']
+        elif 'B 类计划' in plan_attr or 'B类计划' in plan_attr:
+            plan_types = ['B 类计划']
+        elif batch == '第一批' and school_type == '普通高中' and plan_cat == '普通高中':
+            # 旧逻辑：只有第一批普通高中且计划类别为普通高中时，才同时创建 A/B 类计划
             plan_types = ['A 类计划', 'B 类计划']
         else:
             # 其他情况保持原有计划类别
@@ -115,7 +121,7 @@ def import_data():
             rows_to_insert.append((
                 int(row['年份']) if pd.notna(row['年份']) else None,
                 row['批次'],
-                p_type,  # plan_type
+                p_type, # plan_type
                 score_type,
                 row['school_type'],
                 row['学校代码'],
@@ -132,18 +138,18 @@ def import_data():
                 to_str(row['考查科目等级总分最低要求']),
                 to_str(row['综合素质评价要求']),
                 to_str(row['分数来源']),
-                None,  # policy_note
-                None   # remark
+                None, # policy_note
+                None # remark
             ))
             
             insert_count += 1
-            
-            # 批量插入，每 1000 条提交一次
-            if len(rows_to_insert) >= 1000:
-                cursor.executemany(insert_sql, rows_to_insert)
-                conn.commit()
-                print(f"已插入 {insert_count} 行")
-                rows_to_insert = []
+        
+        # 批量插入，每 1000 条提交一次
+        if len(rows_to_insert) >= 1000:
+            cursor.executemany(insert_sql, rows_to_insert)
+            conn.commit()
+            print(f"已插入 {insert_count} 行")
+            rows_to_insert = []
     
     # 插入剩余数据
     if rows_to_insert:
@@ -161,32 +167,32 @@ def import_data():
     cursor.execute("SELECT school_type, COUNT(*) FROM scores GROUP BY school_type")
     print("\n学校类别分布:")
     for row in cursor.fetchall():
-        print(f"  {row[0]}: {row[1]}")
+        print(f" {row[0]}: {row[1]}")
     
     cursor.execute("SELECT plan_type, COUNT(*) FROM scores GROUP BY plan_type ORDER BY plan_type")
     print("\n计划类别分布:")
     for row in cursor.fetchall():
-        print(f"  {row[0] or 'NULL'}: {row[1]}")
+        print(f" {row[0] or 'NULL'}: {row[1]}")
     
     print("\n=== A/B 类计划分布 ===")
     cursor.execute("SELECT batch, school_type, plan_type, COUNT(*) FROM scores WHERE plan_type IN ('A 类计划', 'B 类计划') GROUP BY batch, school_type, plan_type ORDER BY batch, school_type, plan_type")
     for row in cursor.fetchall():
-        print(f"  {row[0]} | {row[1]} | {row[2]}: {row[3]}条")
+        print(f" {row[0]} | {row[1]} | {row[2]}: {row[3]}条")
     
     print("\n=== 普通高中示例数据（A 类计划） ===")
-    cursor.execute("SELECT school_name, batch, plan_type, school_attr, fee_type, min_score FROM scores WHERE school_type='普通高中' AND plan_type='A 类计划' LIMIT 5")
+    cursor.execute("SELECT school_name, batch, plan_type, school_attr, fee_type, min_score FROM scores WHERE school_type='普通高中' AND plan_type='A 类计划' AND year=2025 ORDER BY min_score DESC LIMIT 5")
     for row in cursor.fetchall():
-        print(f"  {row[0]} | {row[1]} | {row[2]} | {row[3]} | {row[4]} | {row[5]}")
+        print(f" {row[0]} | {row[1]} | {row[2]} | {row[3]} | {row[4]} | {row[5]}")
     
     print("\n=== 普通高中示例数据（B 类计划） ===")
-    cursor.execute("SELECT school_name, batch, plan_type, school_attr, fee_type, min_score FROM scores WHERE school_type='普通高中' AND plan_type='B 类计划' LIMIT 5")
+    cursor.execute("SELECT school_name, batch, plan_type, school_attr, fee_type, min_score FROM scores WHERE school_type='普通高中' AND plan_type='B 类计划' AND year=2025 ORDER BY min_score DESC LIMIT 5")
     for row in cursor.fetchall():
-        print(f"  {row[0]} | {row[1]} | {row[2]} | {row[3]} | {row[4]} | {row[5]}")
+        print(f" {row[0]} | {row[1]} | {row[2]} | {row[3]} | {row[4]} | {row[5]}")
     
-    print("\n=== 中职学校示例数据 ===")
-    cursor.execute("SELECT school_name, plan_type, school_attr, fee_type, major_name, min_score FROM scores WHERE school_type='中职学校' LIMIT 5")
+    print("\n=== 纪念中学2025年数据验证 ===")
+    cursor.execute("SELECT school_name, plan_type, min_score FROM scores WHERE school_name LIKE '%纪念%' AND year=2025 AND plan_type IN ('A 类计划', 'B 类计划') ORDER BY plan_type, min_score DESC")
     for row in cursor.fetchall():
-        print(f"  {row[0]} | {row[1]} | {row[2]} | {row[3]} | {row[4]} | {row[5]}")
+        print(f" {row[0]} | {row[1]} | {row[2]}")
     
     conn.close()
     return True
