@@ -288,7 +288,7 @@ ${userTotal >= 12 ? '满足绝大多数要求' : '部分学校要求较高'}
 </div>
 `;
 
-const resultData = currentMode === 'A' ? data.res_a : data.res_b;
+resultData = currentMode === 'A' ? data.res_a : data.res_b;
 allData = resultData;
  
 renderList(allData.rush.slice(0, 4), 'rushList');
