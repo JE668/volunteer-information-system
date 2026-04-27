@@ -1,11 +1,12 @@
-# Vercel wrapper - exports the Flask app as 'application'
+# Vercel wrapper for Flask app
 import os
 import sys
 
-# Ensure correct path for data directory
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if _ROOT not in sys.path:
-    sys.path.insert(0, _ROOT)
+sys.path.insert(0, _ROOT)
 
-from app import app as application
-application.config['DATABASE'] = os.path.join(_ROOT, 'data', 'zs_scores.db')
+from app import app
+app.config['DATABASE'] = os.path.join(_ROOT, 'data', 'zs_scores.db')
+
+# Export as 'app' for Vercel Python runtime
+app = app
