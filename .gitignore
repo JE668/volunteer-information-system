@@ -8,10 +8,9 @@ venv/
 env/
 .env
 
-# Database
-*.db
-*.sqlite
-*.sqlite3
+# Database (but track zs_scores.db)
+# *.db
+!data/zs_scores.db
 
 # IDE
 .vscode/

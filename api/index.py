@@ -1,4 +1,3 @@
-# Vercel wrapper for Flask app
 import os
 import sys
 
@@ -7,6 +6,3 @@ sys.path.insert(0, _ROOT)
 
 from app import app
 app.config['DATABASE'] = os.path.join(_ROOT, 'data', 'zs_scores.db')
-
-# Export as 'app' for Vercel Python runtime
-app = app
