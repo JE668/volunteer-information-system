@@ -172,66 +172,95 @@ def api_enrollment():
 
 @app.route('/api/schools')
 def api_schools():
-    year = request.args.get('year', 2025, type=int)
-    school_type = request.args.get('type', 'pg')
-    attr = request.args.get('attr', '')
-    fee = request.args.get('fee', '')
-    batch = request.args.get('batch', '')
-    score_type = request.args.get('score_type', '')
-    sub_category = request.args.get('sub_category', '')
+    try:
+        year = request.args.get('year', 2025, type=int)
+        school_type = request.args.get('type', 'pg')
+        attr = request.args.get('attr', '')
+        fee = request.args.get('fee', '')
+        batch = request.args.get('batch', '')
+        score_type = request.args.get('score_type', '')
+        sub_category = request.args.get('sub_category', '')
 
-    if score_type == '指标生':
-        # Logic for Indicator Students: Use 'quota' table as base to avoid duplication
-        where_clauses = ['year=?', 'min_score IS NOT NULL']
-        params = [year]
-        
-        if attr: where_clauses.append('school_attr = ?'); params.append(attr)
-        if fee: where_clauses.append('fee_type = ?'); params.append(fee)
-        if batch: where_clauses.append('batch = ?'); params.append(batch)
-        if sub_category: where_clauses.append('junior_school = ?'); params.append(sub_category)
-        
-                sql = f'SELECT DISTINCT q.high_school as school_name, "- " as major_name, "" as major_code, q.school_attr, q.fee_type, q.batch, "指标生" as score_type, "指标生计划" as plan_type, q.min_score, "" as subject_grade_req, "" as subject_grade_total_req, q.junior_school, "普通高中" as school_type, (SELECT MIN(min_score) FROM scores WHERE school_name = q.high_school AND year = q.year AND batch = "第一批" AND school_type = "普通高中" AND score_type = "普通高中" AND plan_type LIKE "A%") as regular_score FROM quota q WHERE {" AND ".join(where_clauses)} ORDER BY q.batch ASC, q.min_score DESC'
-        rows = query_all(sql, params)
-    else:
-        # Logic for Regular/Other students: Use 'scores' table
-        where_clauses = ['year=?', 'min_score IS NOT NULL']
-        params = [year]
-        
-        if attr: where_clauses.append('school_attr = ?'); params.append(attr)
-        if fee: where_clauses.append('fee_type = ?'); params.append(fee)
-        if batch: where_clauses.append('batch = ?'); params.append(batch)
-        if score_type: where_clauses.append('score_type = ?'); params.append(score_type)
-        if sub_category: where_clauses.append('major_name LIKE ?'); params.append(f'%{sub_category}%')
-        
-        if school_type == 'pg':
-            where_clauses.append('school_type = "普通高中" AND score_type != "3+4中本贯通"')
-        elif school_type == 'voc':
-            where_clauses.append('(school_type = "中职学校" OR score_type = "3+4中本贯通")')
+        if score_type == '指标生':
+            # 1. Fetch Indicator Data from quota table
+            where_clauses = ['year=?', 'min_score IS NOT NULL']
+            params = [year]
+            if attr: where_clauses.append('school_attr = ?'); params.append(attr)
+            if fee: where_clauses.append('fee_type = ?'); params.append(fee)
+            if batch: where_clauses.append('batch = ?'); params.append(batch)
+            if sub_category: where_clauses.append('junior_school = ?'); params.append(sub_category)
             
-        sql = f'SELECT school_name, major_name, major_code, school_attr, fee_type, batch, score_type, plan_type, min_score, subject_grade_req, subject_grade_total_req, junior_school, school_type FROM scores WHERE {" AND ".join(where_clauses)} ORDER BY batch ASC, min_score DESC'
-        rows = query_all(sql, params)
+            sql = f'SELECT high_school as school_name, "- " as major_name, "" as major_code, school_attr, fee_type, batch, "指标生" as score_type, "指标生计划" as plan_type, min_score, "" as subject_grade_req, "" as subject_grade_total_req, junior_school, "普通高中" as school_type FROM quota WHERE {" AND ".join(where_clauses)} ORDER BY batch ASC, min_score DESC'
+            rows = query_all(sql, params)
+            
+            # 2. Fetch Regular A-type scores for the same year/batch as a lookup map
+            reg_sql = 'SELECT school_name, min_score FROM scores WHERE year=? AND batch="第一批" AND school_type="普通高中" AND score_type="普通高中" AND plan_type LIKE "A%"'
+            reg_rows = query_all(reg_sql, [year])
+            reg_map = {r['school_name']: r['min_score'] for r in reg_rows}
+            
+            result = []
+            for r in rows:
+                result.append({
+                    'year': year,
+                    'school_name': r['school_name'],
+                    'major_name': r['major_name'],
+                    'major_code': r.get('major_code', ''),
+                    'school_attr': r['school_attr'],
+                    'fee_type': r['fee_type'],
+                    'batch': r['batch'],
+                    'score_type': r['score_type'],
+                    'plan_type': r.get('plan_type', ''),
+                    'min_score': r['min_score'],
+                    'subject_grade_req': r.get('subject_grade_req', ''),
+                    'subject_grade_total_req': r.get('subject_grade_total_req', ''),
+                    'junior_school': r.get('junior_school', ''),
+                    'regular_score': reg_map.get(r['school_name']),
+                    'type': 'pg'
+                })
+            return jsonify(result)
 
-    result = []
-    for r in rows:
-        res_type = 'voc' if (r['school_type'] == '中职学校' or r['score_type'] == '3+4中本贯通') else 'pg'
-        result.append({
-            'year': year,
-            'school_name': r['school_name'],
-            'major_name': r['major_name'],
-            'major_code': r.get('major_code', ''),
-            'school_attr': r['school_attr'],
-            'fee_type': r['fee_type'],
-            'batch': r['batch'],
-            'score_type': r['score_type'],
-            'plan_type': r.get('plan_type', ''),
-            'min_score': r['min_score'],
-            'subject_grade_req': r.get('subject_grade_req', ''),
-            'subject_grade_total_req': r.get('subject_grade_total_req', ''),
-            'junior_school': r.get('junior_school', ''),
-            'regular_score': r.get('regular_score'),
-            'type': res_type
-        })
-    return jsonify(result)
+        else:
+            # Logic for Regular/Other students: Use 'scores' table
+            where_clauses = ['year=?', 'min_score IS NOT NULL']
+            params = [year]
+            if attr: where_clauses.append('school_attr = ?'); params.append(attr)
+            if fee: where_clauses.append('fee_type = ?'); params.append(fee)
+            if batch: where_clauses.append('batch = ?'); params.append(batch)
+            if score_type: where_clauses.append('score_type = ?'); params.append(score_type)
+            if sub_category: where_clauses.append('major_name LIKE ?'); params.append(f'%{sub_category}%')
+            
+            if school_type == 'pg':
+                where_clauses.append('school_type = "普通高中" AND score_type != "3+4中本贯通"')
+            elif school_type == 'voc':
+                where_clauses.append('(school_type = "中职学校" OR score_type = "3+4中本贯通")')
+                
+            sql = f'SELECT school_name, major_name, major_code, school_attr, fee_type, batch, score_type, plan_type, min_score, subject_grade_req, subject_grade_total_req, junior_school, school_type FROM scores WHERE {" AND ".join(where_clauses)} ORDER BY batch ASC, min_score DESC'
+            rows = query_all(sql, params)
+            
+            result = []
+            for r in rows:
+                res_type = 'voc' if (r['school_type'] == '中职学校' or r['score_type'] == '3+4中本贯通') else 'pg'
+                result.append({
+                    'year': year,
+                    'school_name': r['school_name'],
+                    'major_name': r['major_name'],
+                    'major_code': r.get('major_code', ''),
+                    'school_attr': r['school_attr'],
+                    'fee_type': r['fee_type'],
+                    'batch': r['batch'],
+                    'score_type': r['score_type'],
+                    'plan_type': r.get('plan_type', ''),
+                    'min_score': r['min_score'],
+                    'subject_grade_req': r.get('subject_grade_req', ''),
+                    'subject_grade_total_req': r.get('subject_grade_total_req', ''),
+                    'junior_school': r.get('junior_school', ''),
+                    'regular_score': None,
+                    'type': res_type
+                })
+            return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e), 'message': 'Internal Server Error'}), 500
+
 
 
 @app.route('/api/match')
