@@ -81,6 +81,7 @@ async function updateScoreTypes() {
     const scoreTypeSelect = document.getElementById('scoreTypeSelect');
     try {
         const res = await fetch(`/api/filters/types?year=${year}&batch=${batch}`);
+        if (!res.ok) throw new Error('Network response was not ok');
         const data = await res.json();
         scoreTypeSelect.innerHTML = '<option value="">全部</option>';
         if (data.score_types && data.score_types.length > 0) {
@@ -95,6 +96,7 @@ async function updateScoreTypes() {
         }
     } catch (e) {
         console.error('Failed to update score types:', e);
+        scoreTypeSelect.innerHTML = '<option value="">加载失败</option>';
     }
 }
 
@@ -103,14 +105,17 @@ async function updateFilters() {
     const batchSelect = document.getElementById('batchSelect');
     try {
         const res = await fetch(`/api/filters?year=${year}`);
+        if (!res.ok) throw new Error('Network response was not ok');
         const data = await res.json();
         batchSelect.innerHTML = '<option value="">全部批次</option>';
         data.batches.forEach(b => {
             batchSelect.innerHTML += `<option value="${b}">${b}</option>`;
         });
-        await updateScoreTypes();
+        // 关键：使用非阻塞方式刷新类型，避免崩溃导致批次无法显示
+        updateScoreTypes().catch(e => console.error('Type refresh failed:', e));
     } catch (e) {
         console.error('Failed to update filters:', e);
+        batchSelect.innerHTML = '<option value="">加载失败</option>';
     }
 }
 
@@ -175,7 +180,7 @@ function renderRow(s) {
     <tr class="hover:bg-gray-50 transition">
     <td class="px-6 py-4 text-sm">${s.year || '-'}</td>
     <td class="px-6 py-4 text-sm">${s.batch || '-'}</td>
-    <td class="px-6 py-4 text-xs"><span class="bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded font-medium">${s.score_type || '-'}</span></td>
+    <td class="px-6 py-4 text-xs"><span class="bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded font-medium">${s.score_type || '-'}</td></td>
     <td class="px-6 py-4 text-xs text-gray-500">${s.plan_type || '-'}</td>
     <td class="px-6 py-4 font-medium">${schoolDisplay}</td>
     <td class="px-6 py-4 text-sm text-indigo-600 font-medium">${displayMajor}</td>
@@ -211,10 +216,10 @@ document.getElementById('batchSelect').onchange = updateScoreTypes;
 document.getElementById('scoreTypeSelect').onchange = function() {
     const scoreType = this.value;
     const subTypeSelect = document.getElementById('subTypeSelect');
-    const batchSelect = document.getElementById('batchSelect');
+    const batchSelect = document.getElementById('batchSelect').value;
     subTypeSelect.innerHTML = '';
     if (scoreType === '艺术生' || scoreType === '学科类自主招生') {
-        batchSelect.value = '提前批';
+        document.getElementById('batchSelect').value = '提前批';
     }
     const mappings = {
         '艺术生': ['全部', '音乐', '美术', '舞蹈', '戏剧'],
