@@ -89,7 +89,7 @@
 function renderHeader(type) {
     const headerRow = document.getElementById('headerRow');
     if (type === 'voc') {
-    // 中职学校：年份 - 批次 - 计划类型 - 专业代码 - 专业名称 - 学校属性 - 收费类型 - 报考条件 - 分数线
+    // 中职学校：年份 - 批次 - 计划类型 - 专业代码 - 细分专业/方向 - 学校属性 - 收费类型 - 报考条件 - 分数线
     headerRow.innerHTML = `
     <th class="px-6 py-4 border-b">年份</th>
     <th class="px-6 py-4 border-b">批次</th>
@@ -102,13 +102,14 @@ function renderHeader(type) {
     <th class="px-6 py-4 border-b text-right">分数线</th>
     `;
     } else {
-    // 普通高中：年份 - 批次 - 计划类型 - 计划属性 - 学校名称 - 学校属性 - 收费类型 - 报考条件 - 分数线
+    // 普通高中：年份 - 批次 - 计划类型 - 计划属性 - 学校名称 - 细分专业/方向 - 学校属性 - 收费类型 - 报考条件 - 分数线
     headerRow.innerHTML = `
     <th class="px-6 py-4 border-b">年份</th>
     <th class="px-6 py-4 border-b">批次</th>
     <th class="px-6 py-4 border-b">计划类型</th>
     <th class="px-6 py-4 border-b">计划属性</th>
     <th class="px-6 py-4 border-b">学校名称</th>
+    <th class="px-6 py-4 border-b">细分专业/方向</th>
     <th class="px-6 py-4 border-b">学校属性</th>
     <th class="px-6 py-4 border-b">收费类型</th>
     <th class="px-6 py-4 border-b">报考条件</th>
@@ -118,6 +119,14 @@ function renderHeader(type) {
 }
 
 function renderRow(s) {
+    // 智能填充细分方向逻辑
+    let displayMajor = s.major_name || '';
+    if (!displayMajor) {
+        if (s.score_type === '艺术生') displayMajor = '艺术生 (综合)';
+        else if (s.score_type === '学科类自主招生') displayMajor = '自主招生 (综合)';
+        else displayMajor = '-';
+    }
+
     if (s.type === 'voc') {
     // 中职学校
     return `
@@ -126,7 +135,7 @@ function renderRow(s) {
     <td class="px-6 py-4 text-sm">${s.batch || '-'}</td>
     <td class="px-6 py-4 text-xs text-gray-500">${s.score_type || '-'}</td>
     <td class="px-6 py-4 text-xs">${s.major_code || '-'}</td>
-    <td class="px-6 py-4 font-medium">${s.major_name || s.school_name}</td>
+    <td class="px-6 py-4 font-medium">${displayMajor}</td>
     <td class="px-6 py-4 text-xs text-gray-500">${s.school_attr || '-'}</td>
     <td class="px-6 py-4 text-sm">${s.fee_type || '-'}</td>
     <td class="px-6 py-4 text-xs">
@@ -146,6 +155,7 @@ function renderRow(s) {
     <td class="px-6 py-4 text-xs text-gray-500">${s.score_type || '-'}</td>
     <td class="px-6 py-4 text-xs text-gray-500">${s.plan_type || '-'}</td>
     <td class="px-6 py-4 font-medium">${s.school_name || '-'}</td>
+    <td class="px-6 py-4 text-sm text-indigo-600 font-medium">${displayMajor}</td>
     <td class="px-6 py-4 text-xs text-gray-500">${s.school_attr || '-'}</td>
     <td class="px-6 py-4 text-sm">${s.fee_type || '-'}</td>
     <td class="px-6 py-4 text-xs">
