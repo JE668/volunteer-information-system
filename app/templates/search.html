@@ -240,16 +240,53 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    scoreTypeSelect.onchange = function() {
+    scoreTypeSelect.onchange = async function() {
         const scoreType = this.value;
         subTypeSelect.innerHTML = '';
+        
         if (scoreType === '艺术生' || scoreType === '学科类自主招生') {
             batchSelect.value = '提前批';
         }
+        
+        if (scoreType === '指标生') {
+            subTypeSelect.disabled = false;
+            subTypeSelect.innerHTML = '<option value="">全部初中</option>';
+            try {
+                const res = await fetch(`/api/filters/junior_schools?year=${yearSelect.value}`);
+                const data = await res.json();
+                if (data.length > 0) {
+                    data.forEach(js => {
+                        const opt = document.createElement('option');
+                        opt.value = js;
+                        opt.textContent = js;
+                        subTypeSelect.appendChild(opt);
+                    });
+                }
+            } catch (e) {
+                console.error('Junior school fetch failed:', e);
+                subTypeSelect.innerHTML = '<option value="">加载失败</option>';
+            }
+            return;
+        }
+        
         const mappings = {
             '艺术生': ['全部', '音乐', '美术', '舞蹈', '戏剧'],
             '学科类自主招生': ['全部', '数学类', '物理类', '化学类', '生物类']
         };
+        
+        if (mappings[scoreType]) {
+            subTypeSelect.disabled = false;
+            mappings[scoreType].forEach(opt => {
+                const el = document.createElement('option');
+                el.value = opt === '全部' ? '' : opt;
+                el.textContent = opt;
+                subTypeSelect.appendChild(el);
+            });
+        } else {
+            subTypeSelect.disabled = true;
+            subTypeSelect.innerHTML = '<option value="">请先选择计划类型</option>';
+        }
+    };
         if (mappings[scoreType]) {
             subTypeSelect.disabled = false;
             mappings[scoreType].forEach(opt => {

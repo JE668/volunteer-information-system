@@ -126,6 +126,17 @@ def api_filter_types():
     sql += ' ORDER BY score_type'
     score_types = [r['score_type'] for r in db.execute(sql, params).fetchall()]
     return jsonify({'score_types': score_types})
+@app.route('/api/filters/junior_schools')
+def api_filter_junior_schools():
+    year = request.args.get('year', 2025, type=int)
+    db = get_db()
+    # Get all unique junior schools for a given year that have entries in the scores table
+    # Especially for indicator students (指标生)
+    junior_schools = [r['junior_school'] for r in db.execute(
+        'SELECT DISTINCT junior_school FROM scores WHERE year=? AND junior_school IS NOT NULL AND junior_school != "" ORDER BY junior_school', [year]
+    ).fetchall()]
+    return jsonify(junior_schools)
+
 
 @app.route('/api/enrollment')
 def api_enrollment():
