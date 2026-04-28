@@ -157,7 +157,7 @@ function renderRow(s) {
         ${s.subject_grade_total_req ? `<span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded text-xs font-medium ml-1">总分${s.subject_grade_total_req}</span>` : ''}
         ${(!s.subject_grade_req && !s.subject_grade_total_req) ? '<span class="text-gray-400">无</span>' : ''}
     </td>
-    <td class="px-6 py-4 text-right font-mono font-bold text-indigo-600">${s.min_score}分</td>
+    <td class="px-6 py-4 text-right font-mono font-bold text-indigo-600">${s.min_score !== null && s.min_score !== undefined ? s.min_score + '分' : '无'}</td>
     </tr>
     `;
     }
