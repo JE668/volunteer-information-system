@@ -110,14 +110,15 @@ function renderHeader(type) {
 }
 
 // 根据学校类型生成不同的行内容
-function renderRow(type, s) {
-    if (type === 'voc') {
-    // 中职学校
+// 根据学校类型生成不同的行内容
+function renderRow(s) {
+    if (s.type === 'voc') {
+    // 中职学校：年份 - 批次 - 计划类型 - 专业代码 - 专业名称 - 住宿 - 收费类型 - 报考条件 - 分数线
     return `
     <tr class="hover:bg-gray-50 transition">
     <td class="px-6 py-4 text-sm">${s.year || '-'}</td>
     <td class="px-6 py-4 text-sm">${s.batch || '-'}</td>
-    <td class="px-6 py-4 text-xs text-gray-500">${s.plan_type || '-'}</td>
+    <td class="px-6 py-4 text-xs text-gray-500">${s.score_type || '-'}</td>
     <td class="px-6 py-4 text-xs">${s.major_code || '-'}</td>
     <td class="px-6 py-4 font-medium">${s.major_name || s.school_name}</td>
     <td class="px-6 py-4 text-xs text-gray-500">${s.school_attr || '-'}</td>
@@ -131,12 +132,12 @@ function renderRow(type, s) {
     </tr>
     `;
     } else {
-    // 普通高中
+    // 普通高中：年份 - 批次 - 计划类型 - 计划属性 - 住宿 - 收费类型 - 报考条件 - 分数线
     return `
     <tr class="hover:bg-gray-50 transition">
     <td class="px-6 py-4 text-sm">${s.year || '-'}</td>
     <td class="px-6 py-4 text-sm">${s.batch || '-'}</td>
-    <td class="px-6 py-4 text-xs text-gray-500">${s.plan_type || '-'}</td>
+    <td class="px-6 py-4 text-xs text-gray-500">${s.score_type || '-'}</td>
     <td class="px-6 py-4 text-sm">${s.school_attr || '-'}</td>
     <td class="px-6 py-4 text-xs text-gray-500">-</td>
     <td class="px-6 py-4 text-sm">${s.fee_type || '-'}</td>
@@ -166,7 +167,7 @@ document.getElementById('searchBtn').onclick = async () => {
     const data = await res.json();
     
     const list = document.getElementById('schoolList');
-    list.innerHTML = data.length ? data.map(s => renderRow(type, s)).join('') : '<tr><td colspan="8" class="px-6 py-12 text-center text-gray-400 italic">未找到相关数据</td></tr>';
+    list.innerHTML = data.length ? data.map(s => renderRow(s)).join('') : '<tr><td colspan="8" class="px-6 py-12 text-center text-gray-400 italic">未找到相关数据</td></tr>';
 };
 </script>
 {% endblock %}
