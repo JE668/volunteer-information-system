@@ -203,85 +203,94 @@ function renderRow(s) {
     `;
 }
 
-document.getElementById('searchBtn').onclick = async () => {
-    const year = document.getElementById('yearSelect').value;
-    const type = document.getElementById('typeSelect').value;
-    const attr = document.getElementById('attrSelect').value;
-    const fee = document.getElementById('feeSelect').value;
-    const batch = document.getElementById('batchSelect').value;
-    const scoreType = document.getElementById('scoreTypeSelect').value;
-    const subCategory = document.getElementById('subTypeSelect').value;
-    renderHeader(type);
-    const res = await fetch(`/api/schools?year=${year}&type=${type}&attr=${attr}&fee=${fee}&batch=${batch}&score_type=${scoreType}&sub_category=${subCategory}`);
-    const data = await res.json();
-    const list = document.getElementById('schoolList');
-    list.innerHTML = data.length ? data.map(s => renderRow(s)).join('') : '<tr><td colspan="12" class="px-6 py-12 text-center text-gray-400 italic">未找到相关数据</td></tr>';
-};
 
-document.getElementById('yearSelect').onchange = updateFilters;
-
-document.getElementById('batchSelect').onchange = async function() {
-    const batch = this.value;
-    const year = document.getElementById('yearSelect').value;
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('Binding search page events...');
     
-    // 当批次改变时，重新请求类型接口以实现动态联动
-    try {
-        const res = await fetch(`/api/filters/types?year=${year}&batch=${batch}`);
-        if (!res.ok) throw new Error('API response not ok');
-        const data = await res.json();
-        const scoreTypeSelect = document.getElementById('scoreTypeSelect');
-        scoreTypeSelect.innerHTML = '<option value="">全部</option>';
-        if (data.score_types && data.score_types.length > 0) {
-            data.score_types.forEach(st => {
-                scoreTypeSelect.innerHTML += `<option value="${st}">${st}</option>`;
-            });
-            if (data.score_types.includes('普通高中')) {
-                scoreTypeSelect.value = '普通高中';
-            } else {
-                scoreTypeSelect.value = data.score_types[0];
-            }
-        }
-    } catch (e) {
-        console.error('Batch-Type linkage failed:', e);
-    }
-};
-
-document.getElementById('scoreTypeSelect').onchange = function() {
-    const scoreType = this.value;
-    const subTypeSelect = document.getElementById('subTypeSelect');
+    const searchBtn = document.getElementById('searchBtn');
+    const yearSelect = document.getElementById('yearSelect');
     const batchSelect = document.getElementById('batchSelect');
-    subTypeSelect.innerHTML = '';
-    if (scoreType === '艺术生' || scoreType === '学科类自主招生') {
-        batchSelect.value = '提前批';
-    }
-    const mappings = {
-        '艺术生': ['全部', '音乐', '美术', '舞蹈', '戏剧'],
-        '学科类自主招生': ['全部', '数学类', '物理类', '化学类', '生物类']
-    };
-    if (mappings[scoreType]) {
-        subTypeSelect.disabled = false;
-        mappings[scoreType].forEach(opt => {
-            const el = document.createElement('option');
-            el.value = opt === '全部' ? '' : opt;
-            el.textContent = opt;
-            subTypeSelect.appendChild(el);
-        });
-    } else {
-        subTypeSelect.disabled = true;
-        subTypeSelect.innerHTML = '<option value="">请先选择计划类型</option>';
-    }
-};
+    const scoreTypeSelect = document.getElementById('scoreTypeSelect');
 
-window.addEventListener('DOMContentLoaded', () => {
-    updateFilters();
-    // 兜底机制：如果 1 秒后依然在加载，再次尝试初始化
-    setTimeout(() => {
-        const batchSelect = document.getElementById('batchSelect');
-        if (batchSelect && batchSelect.innerHTML.includes('加载中...')) {
-            console.log('Initialization fallback triggered...');
-            updateFilters();
+    if (!searchBtn || !yearSelect || !batchSelect || !scoreTypeSelect) {
+        console.error('Critical DOM elements missing');
+        return;
+    }
+
+    // 1. Search Button
+    searchBtn.onclick = async () => {
+        try {
+            const year = yearSelect.value;
+            const type = document.getElementById('typeSelect').value;
+            const attr = document.getElementById('attrSelect').value;
+            const fee = document.getElementById('feeSelect').value;
+            const batch = batchSelect.value;
+            const scoreType = scoreTypeSelect.value;
+            const subCategory = document.getElementById('subTypeSelect').value;
+            
+            renderHeader(type);
+            const res = await fetch(`/api/schools?year=${year}&type=${type}&attr=${attr}&fee=${fee}&batch=${batch}&score_type=${scoreType}&sub_category=${subCategory}`);
+            if (!res.ok) throw new Error('Search API failed');
+            const data = await res.json();
+            const list = document.getElementById('schoolList');
+            list.innerHTML = data.length ? data.map(s => renderRow(s)).join('') : '<tr><td colspan="12" class="px-6 py-12 text-center text-gray-400 italic">未找到相关数据</td></tr>';
+        } catch (e) {
+            console.error('Search failed:', e);
+            alert('查询失败，请检查网络或刷新页面');
         }
-    }, 1000);
+    };
+
+    // 2. Year Change
+    yearSelect.onchange = updateFilters;
+
+    // 3. Batch Change (Linkage to scoreType)
+    batchSelect.onchange = async function() {
+        const batch = this.value;
+        const year = yearSelect.value;
+        try {
+            const res = await fetch(`/api/filters/types?year=${year}&batch=${batch}`);
+            if (!res.ok) throw new Error('Linkage API failed');
+            const data = await res.json();
+            scoreTypeSelect.innerHTML = '<option value="">全部</option>';
+            if (data.score_types && data.score_types.length > 0) {
+                data.score_types.forEach(st => {
+                    scoreTypeSelect.innerHTML += `<option value="${st}">${st}</option>`;
+                });
+                scoreTypeSelect.value = data.score_types.includes('普通高中') ? '普通高中' : data.score_types[0];
+            }
+        } catch (e) {
+            console.error('Batch-Type linkage failed:', e);
+        }
+    };
+
+    // 4. ScoreType Change (Linkage to subType)
+    scoreTypeSelect.onchange = function() {
+        const scoreType = this.value;
+        const subTypeSelect = document.getElementById('subTypeSelect');
+        const bSelect = document.getElementById('batchSelect');
+        subTypeSelect.innerHTML = '';
+        if (scoreType === '艺术生' || scoreType === '学科类自主招生') {
+            bSelect.value = '提前批';
+        }
+        const mappings = {
+            '艺术生': ['全部', '音乐', '美术', '舞蹈', '戏剧'],
+            '学科类自主招生': ['全部', '数学类', '物理类', '化学类', '生物类']
+        };
+        if (mappings[scoreType]) {
+            subTypeSelect.disabled = false;
+            mappings[scoreType].forEach(opt => {
+                const el = document.createElement('option');
+                el.value = opt === '全部' ? '' : opt;
+                el.textContent = opt;
+                subTypeSelect.appendChild(el);
+            });
+        } else {
+            subTypeSelect.disabled = true;
+            subTypeSelect.innerHTML = '<option value="">请先选择计划类型</option>';
+        }
+    };
+    
+    console.log('All events bound successfully.');
 });
 </script>
 {% endblock %}
