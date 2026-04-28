@@ -188,9 +188,9 @@ def api_schools():
         if attr: where_clauses.append('school_attr = ?'); params.append(attr)
         if fee: where_clauses.append('fee_type = ?'); params.append(fee)
         if batch: where_clauses.append('batch = ?'); params.append(batch)
-        if sub_category: where_clauses.append('junior_school LIKE ?'); params.append(f'%{sub_category}%')
+        if sub_category: where_clauses.append('junior_school = ?'); params.append(sub_category)
         
-        sql = f'SELECT high_school as school_name, "- " as major_name, "" as major_code, school_attr, fee_type, batch, "指标生" as score_type, "指标生计划" as plan_type, min_score, "" as subject_grade_req, "" as subject_grade_total_req, junior_school, "普通高中" as school_type FROM quota WHERE {" AND ".join(where_clauses)} ORDER BY batch ASC, min_score DESC'
+        sql = f'SELECT DISTINCT high_school as school_name, "- " as major_name, "" as major_code, school_attr, fee_type, batch, "指标生" as score_type, "指标生计划" as plan_type, min_score, "" as subject_grade_req, "" as subject_grade_total_req, junior_school, "普通高中" as school_type FROM quota WHERE {" AND ".join(where_clauses)} ORDER BY batch ASC, min_score DESC'
         rows = query_all(sql, params)
     else:
         # Logic for Regular/Other students: Use 'scores' table
