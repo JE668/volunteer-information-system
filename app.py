@@ -187,7 +187,12 @@ def api_schools():
     if fee: where_clauses.append('s.fee_type = ?'); params.append(fee)
     if batch: where_clauses.append('s.batch = ?'); params.append(batch)
     if score_type: where_clauses.append('s.score_type = ?'); params.append(score_type)
-    if sub_category: where_clauses.append('s.major_name LIKE ?'); params.append(f'%{sub_category}%')
+    if sub_category:
+        if score_type == '指标生':
+            where_clauses.append('COALESCE(q.junior_school, s.junior_school) LIKE ?')
+        else:
+            where_clauses.append('s.major_name LIKE ?')
+        params.append(f'%{sub_category}%')
 
     if school_type == 'pg':
         where_clauses.append('s.school_type = "普通高中" AND s.score_type != "3+4中本贯通"')
