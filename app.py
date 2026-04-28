@@ -195,7 +195,7 @@ def api_schools():
         where_clauses.append('(school_type = "中职学校" OR score_type = "3+4中本贯通")')
     # if school_type == 'all', no additional school_type restriction is needed
 
-    sql = f'SELECT school_name, major_name, major_code, school_attr, fee_type, batch, score_type, plan_type, min_score, subject_grade_req, subject_grade_total_req, junior_school, school_type FROM scores WHERE {" AND ".join(where_clauses)} ORDER BY batch ASC, min_score DESC'
+    sql = f'SELECT s.school_name, s.major_name, s.major_code, s.school_attr, s.fee_type, s.batch, s.score_type, s.plan_type, s.min_score, s.subject_grade_req, s.subject_grade_total_req, COALESCE(q.junior_school, s.junior_school) as junior_school, s.school_type FROM scores s LEFT JOIN quota q ON s.school_name = q.high_school AND s.year = q.year AND s.batch = q.batch WHERE {" AND ".join(where_clauses)} ORDER BY s.batch ASC, s.min_score DESC'
     rows = query_all(sql, params)
 
     result = []
