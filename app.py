@@ -35,9 +35,9 @@ def grade_to_score(grade):
     return mapping.get(grade, 0)
 
 def check_detailed_grade_req(user_grades, req_str, total_req_str, plan_type='A'):
-    \"\"\"
+    """
     plan_type: 'A' (公费: 生地历道), 'B' (自费: 生地物化)
-    \"\"\"
+    """
     result = {'pass': True, 'reason': ''}
     grade_subjects = {
         'A': ['生物', '地理', '历史', '道法'],
