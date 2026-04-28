@@ -15,7 +15,10 @@ def get_sport_score(year): return SPORT_SCORE.get(year, 50)
 
 def get_db():
     if 'db' not in g:
-        g.db = sqlite3.connect(app.config['DATABASE'])
+        # Use URI mode for read-only access to prevent journal file creation issues on read-only filesystems (like Vercel)
+        db_path = app.config['DATABASE']
+        db_uri = f'file:{db_path}?mode=ro' if not db_path.startswith('file:') else db_path
+        g.db = sqlite3.connect(db_uri, uri=True)
         g.db.row_factory = sqlite3.Row
     return g.db
 
