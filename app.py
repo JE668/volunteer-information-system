@@ -102,7 +102,8 @@ def api_filters():
     year = request.args.get('year', 2025, type=int)
     db = get_db()
     batches = [r['batch'] for r in db.execute('SELECT DISTINCT batch FROM scores WHERE year=? AND batch IS NOT NULL ORDER BY batch', [year]).fetchall()]
-    return jsonify({'batches': batches})
+    score_types = [r['score_type'] for r in db.execute('SELECT DISTINCT score_type FROM scores WHERE year=? AND score_type IS NOT NULL ORDER BY score_type', [year]).fetchall()]
+    return jsonify({'batches': batches, 'score_types': score_types})
 
 @app.route('/api/filters/types')
 def api_filter_types():
