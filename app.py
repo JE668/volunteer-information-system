@@ -82,7 +82,12 @@ def check_detailed_grade_req(user_grades, req_str, total_req_str, plan_type='A')
 def index(): return render_template('index.html')
 
 @app.route('/search')
-def page_search(): return render_template('search.html')
+def page_search(): 
+    db = get_db()
+    # 预加载 2025 年的默认过滤器数据，直接注入 HTML 避免前端“加载中”
+    batches = [r['batch'] for r in db.execute('SELECT DISTINCT batch FROM scores WHERE year=2025 AND batch IS NOT NULL ORDER BY batch').fetchall()]
+    score_types = [r['score_type'] for r in db.execute('SELECT DISTINCT score_type FROM scores WHERE year=2025 AND score_type IS NOT NULL ORDER BY score_type').fetchall()]
+    return render_template('search.html', batches=batches, score_types=score_types)
 
 @app.route('/compare')
 def page_compare(): return render_template('compare.html')
