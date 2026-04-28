@@ -190,7 +190,7 @@ def api_schools():
         if batch: where_clauses.append('batch = ?'); params.append(batch)
         if sub_category: where_clauses.append('junior_school = ?'); params.append(sub_category)
         
-        sql = f'SELECT DISTINCT high_school as school_name, "- " as major_name, "" as major_code, school_attr, fee_type, batch, "指标生" as score_type, "指标生计划" as plan_type, min_score, "" as subject_grade_req, "" as subject_grade_total_req, junior_school, "普通高中" as school_type FROM quota WHERE {" AND ".join(where_clauses)} ORDER BY batch ASC, min_score DESC'
+                sql = f'SELECT DISTINCT q.high_school as school_name, "- " as major_name, "" as major_code, q.school_attr, q.fee_type, q.batch, "指标生" as score_type, "指标生计划" as plan_type, q.min_score, "" as subject_grade_req, "" as subject_grade_total_req, q.junior_school, "普通高中" as school_type, (SELECT MIN(min_score) FROM scores WHERE school_name = q.high_school AND year = q.year AND batch = "第一批" AND school_type = "普通高中" AND score_type = "普通高中" AND plan_type LIKE "A%") as regular_score FROM quota q WHERE {" AND ".join(where_clauses)} ORDER BY q.batch ASC, q.min_score DESC'
         rows = query_all(sql, params)
     else:
         # Logic for Regular/Other students: Use 'scores' table
@@ -228,6 +228,7 @@ def api_schools():
             'subject_grade_req': r.get('subject_grade_req', ''),
             'subject_grade_total_req': r.get('subject_grade_total_req', ''),
             'junior_school': r.get('junior_school', ''),
+            'regular_score': r.get('regular_score'),
             'type': res_type
         })
     return jsonify(result)
