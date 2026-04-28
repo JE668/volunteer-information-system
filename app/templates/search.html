@@ -80,8 +80,8 @@
     </div>
 </div>
 
+
 <script>
-// 1. Helper Functions (Defined first)
 async function updateFilters() {
     const yearSelect = document.getElementById('yearSelect');
     const batchSelect = document.getElementById('batchSelect');
@@ -157,36 +157,6 @@ function renderRow(s) {
     } else {
         let schoolDisplay = s.school_name || '-';
         if (s.score_type === '指标生' && s.junior_school) {
-            schoolDisplay = `<div>${s.school_name}</div><div class="text-xs text-indigo-500 font-normal">指标生 ightarrow ${s.junior_school}</div>`;
-        }
-        return `
-        <tr class="hover:bg-gray-50 transition">
-            <td class="px-6 py-4 text-sm">${s.year || '-'}</td>
-            <td class="px-6 py-4 text-sm">${s.batch || '-'}</td>
-            <td class="px-6 py-4 text-xs"><span class="bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded font-medium">${s.score_type || '-'}</span></td>
-            <td class="px-6 py-4 text-xs text-gray-500">${s.plan_type || '-'}</td>
-            <td class="px-6 py-4 font-medium">${schoolDisplay}</td>
-            <td class="px-6 py-4 text-sm text-indigo-600 font-medium">${displayMajor}</td>
-            <td class="px-6 py-4 text-xs text-gray-500">${s.school_attr || '-'}</td>
-            <td class="px-6 py-4 text-sm">${s.fee_type || '-'}</td>
-            <td class="px-6 py-4 text-xs">
-                ${s.subject_grade_req ? `<span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-medium">${s.subject_grade_req}</span>` : ''}
-                ${s.subject_grade_total_req ? `<span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded text-xs font-medium ml-1">总分${s.subject_grade_total_req}</span>` : ''}
-                ${(!s.subject_grade_req && !s.subject_grade_total_req) ? '<span class="text-gray-400">无</span>' : ''}
-            </td>
-            <td class="px-6 py-4 text-right font-mono font-bold text-indigo-600">${s.min_score !== null && s.min_score !== undefined ? s.min_score + '分' : '无'}</td>
-        </tr>`;
-    }
-}
-
-                ${s.subject_grade_total_req ? `<span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded text-xs font-medium ml-1">总分${s.subject_grade_total_req}</span>` : ''}
-                ${(!s.subject_grade_req && !s.subject_grade_total_req) ? '<span class="text-gray-400">无</span>' : ''}
-            </td>
-            <td class="px-6 py-4 text-right font-mono font-bold text-indigo-600">${s.min_score !== null && s.min_score !== undefined ? s.min_score + '分' : '无'}</td>
-        </tr>`;
-    } else {
-        let schoolDisplay = s.school_name || '-';
-        if (s.score_type === '指标生' && s.junior_school) {
             schoolDisplay = `<div>${s.school_name}</div><div class="text-xs text-indigo-500 font-normal">指标生 \rightarrow ${s.junior_school}</div>`;
         }
         return `
@@ -209,7 +179,6 @@ function renderRow(s) {
     }
 }
 
-// 2. Event Bindings (All inside DOMContentLoaded)
 document.addEventListener('DOMContentLoaded', () => {
     const searchBtn = document.getElementById('searchBtn');
     const yearSelect = document.getElementById('yearSelect');
@@ -223,7 +192,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // Search Action
     searchBtn.onclick = async () => {
         try {
             const year = yearSelect.value;
@@ -235,7 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const subCategory = subTypeSelect.value;
             
             renderHeader(type);
-                        const params = new URLSearchParams({ 
+            const params = new URLSearchParams({ 
                 year, type, attr, fee, batch, 
                 score_type: scoreType, 
                 sub_category: subCategory 
@@ -251,10 +219,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Year Change -> Update Batch/Type
     yearSelect.onchange = updateFilters;
 
-    // Batch Change -> Update Type (Dynamic Linkage)
     batchSelect.onchange = async function() {
         const batch = this.value;
         const year = yearSelect.value;
@@ -274,7 +240,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Type Change -> Update SubType
     scoreTypeSelect.onchange = function() {
         const scoreType = this.value;
         subTypeSelect.innerHTML = '';
@@ -300,4 +265,5 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 });
 </script>
+
 {% endblock %}
