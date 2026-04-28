@@ -136,6 +136,7 @@ def api_schools():
     attr = request.args.get('attr', '')
     fee = request.args.get('fee', '')
     batch = request.args.get('batch', '')
+    score_type = request.args.get('score_type', '')
 
     result = []
     where_clauses = ['year=?', 'min_score IS NOT NULL']
@@ -144,6 +145,7 @@ def api_schools():
     if attr: where_clauses.append('school_attr = ?'); params.append(attr)
     if fee: where_clauses.append('fee_type = ?'); params.append(fee)
     if batch: where_clauses.append('batch = ?'); params.append(batch)
+    if score_type: where_clauses.append('score_type = ?'); params.append(score_type)
 
     if school_type in ('pg', 'all'):
         where_pg = where_clauses + ['school_type = "普通高中"']
@@ -153,9 +155,9 @@ def api_schools():
 
     if school_type in ('voc', 'all'):
         where_voc = where_clauses + ['school_type = "中职学校"']
-        sql = f'SELECT school_name, major_name, school_attr, fee_type, batch, min_score FROM scores WHERE {" AND ".join(where_voc)} ORDER BY batch ASC, min_score DESC'
+        sql = f'SELECT school_name, major_name, school_attr, fee_type, batch, score_type, min_score FROM scores WHERE {" AND ".join(where_voc)} ORDER BY batch ASC, min_score DESC'
         rows = query_all(sql, params)
-        for r in rows: result.append({'school_name': r['school_name'], 'major_name': r['major_name'], 'school_attr': r['school_attr'], 'fee_type': r['fee_type'], 'batch': r['batch'], 'min_score': r['min_score'], 'type': 'voc'})
+        for r in rows: result.append({'school_name': r['school_name'], 'major_name': r['major_name'], 'school_attr': r['school_attr'], 'fee_type': r['fee_type'], 'batch': r['batch'], 'score_type': r['score_type'], 'min_score': r['min_score'], 'type': 'voc'})
 
     return jsonify(result)
 
