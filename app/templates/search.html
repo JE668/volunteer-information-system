@@ -28,35 +28,41 @@
                 <option value="民办">民办</option>
             </select>
         </div>
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">批次筛选</label>
-            <select id="batchSelect" class="w-full p-2 border rounded-md outline-none focus:ring-2 focus:ring-indigo-500">
-                <option value="">全部批次</option>
-                <option value="提前批">提前批</option>
-                <option value="第一批">第一批</option>
-                <option value="第二批">第二批</option>
-                <option value="第三批">第三批</option>
-            </select>
-        </div>
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">计划类型</label>
-            <select id="scoreTypeSelect" class="w-full p-2 border rounded-md outline-none focus:ring-2 focus:ring-indigo-500">
-                <option value="">全部</option>
-                <option value="普通高中">普通高中</option>
-                <option value="学科类自主招生">学科类自主招生</option>
-                <option value="外国语班">外国语班</option>
-                <option value="艺术生">艺术生</option>
-            </select>
-        </div>
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">收费类型</label>
-            <select id="feeSelect" class="w-full p-2 border rounded-md outline-none focus:ring-2 focus:ring-indigo-500">
-                <option value="">全部</option>
-                <option value="公费">公费</option>
-                <option value="自费">自费</option>
-                <option value="参公">参公</option>
-            </select>
-        </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">批次筛选</label>
+                <select id="batchSelect" class="w-full p-2 border rounded-md outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="">全部批次</option>
+                    <option value="提前批">提前批</option>
+                    <option value="第一批">第一批</option>
+                    <option value="第二批">第二批</option>
+                    <option value="第三批">第三批</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">计划类型</label>
+                <select id="scoreTypeSelect" class="w-full p-2 border rounded-md outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="">全部</option>
+                    <option value="普通高中">普通高中</option>
+                    <option value="学科类自主招生">学科类自主招生</option>
+                    <option value="外国语班">外国语班</option>
+                    <option value="艺术生">艺术生</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">细分方向</label>
+                <select id="subTypeSelect" class="w-full p-2 border rounded-md outline-none focus:ring-2 focus:ring-indigo-500" disabled>
+                    <option value="">请先选择计划类型</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">收费类型</label>
+                <select id="feeSelect" class="w-full p-2 border rounded-md outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="">全部</option>
+                    <option value="公费">公费</option>
+                    <option value="自费">自费</option>
+                    <option value="参公">参公</option>
+                </select>
+            </div>
             <div class="md:col-span-5 flex justify-end mt-2">
                 <button id="searchBtn" class="w-full md:w-40 gradient-bg text-white font-bold py-2 rounded-md hover:opacity-90 transition">查询学校</button>
             </div>
@@ -79,6 +85,7 @@
 
 <script>
 // 根据学校类型生成不同的表头
+// 根据学校类型生成不同的表头
 function renderHeader(type) {
     const headerRow = document.getElementById('headerRow');
     if (type === 'voc') {
@@ -88,7 +95,7 @@ function renderHeader(type) {
     <th class="px-6 py-4 border-b">批次</th>
     <th class="px-6 py-4 border-b">计划类型</th>
     <th class="px-6 py-4 border-b">专业代码</th>
-    <th class="px-6 py-4 border-b">专业名称</th>
+    <th class="px-6 py-4 border-b">细分专业/方向</th>
     <th class="px-6 py-4 border-b">学校属性</th>
     <th class="px-6 py-4 border-b">收费类型</th>
     <th class="px-6 py-4 border-b">报考条件</th>
@@ -159,15 +166,60 @@ document.getElementById('searchBtn').onclick = async () => {
     const fee = document.getElementById('feeSelect').value;
     const batch = document.getElementById('batchSelect').value;
     const scoreType = document.getElementById('scoreTypeSelect').value;
+    const subCategory = document.getElementById('subTypeSelect').value;
     
     // 渲染表头
     renderHeader(type);
     
-    const res = await fetch(`/api/schools?year=${year}&type=${type}&attr=${attr}&fee=${fee}&batch=${batch}&score_type=${scoreType}`);
+    const res = await fetch(`/api/schools?year=${year}&type=${type}&attr=${attr}&fee=${fee}&batch=${batch}&score_type=${scoreType}&sub_category=${subCategory}`);
+    const data = await res.json();
+    
+    const list = document.getElementById('schoolList');
+    list.innerHTML = data.length ? data.map(s => renderRow(s)).join('') : '<tr><td colspan=\"8\" class=\"px-6 py-12 text-center text-gray-400 italic\">未找到相关数据</td></tr>';
+};
+
+document.getElementById('searchBtn').onclick = async () => {
+    const year = document.getElementById('yearSelect').value;
+    const type = document.getElementById('typeSelect').value;
+    const attr = document.getElementById('attrSelect').value;
+    const fee = document.getElementById('feeSelect').value;
+    const batch = document.getElementById('batchSelect').value;
+    const scoreType = document.getElementById('scoreTypeSelect').value;
+    const subCategory = document.getElementById('subTypeSelect').value;
+    
+    // 渲染表头
+    renderHeader(type);
+    
+    const res = await fetch(`/api/schools?year=${year}&type=${type}&attr=${attr}&fee=${fee}&batch=${batch}&score_type=${scoreType}&sub_category=${subCategory}`);
     const data = await res.json();
     
     const list = document.getElementById('schoolList');
     list.innerHTML = data.length ? data.map(s => renderRow(s)).join('') : '<tr><td colspan="8" class="px-6 py-12 text-center text-gray-400 italic">未找到相关数据</td></tr>';
+};
+
+// 联动筛选逻辑
+document.getElementById('scoreTypeSelect').onchange = function() {
+    const scoreType = this.value;
+    const subTypeSelect = document.getElementById('subTypeSelect');
+    subTypeSelect.innerHTML = '';
+    
+    const mappings = {
+        '艺术生': ['全部', '音乐', '美术', '舞蹈', '戏剧'],
+        '学科类自主招生': ['全部', '数学类', '物理类', '化学类', '生物类']
+    };
+    
+    if (mappings[scoreType]) {
+        subTypeSelect.disabled = false;
+        mappings[scoreType].forEach(opt => {
+            const el = document.createElement('option');
+            el.value = opt === '全部' ? '' : opt;
+            el.textContent = opt;
+            subTypeSelect.appendChild(el);
+        });
+    } else {
+        subTypeSelect.disabled = true;
+        subTypeSelect.innerHTML = '<option value="">请先选择计划类型</option>';
+    }
 };
 </script>
 {% endblock %}

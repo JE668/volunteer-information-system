@@ -137,6 +137,7 @@ def api_schools():
     fee = request.args.get('fee', '')
     batch = request.args.get('batch', '')
     score_type = request.args.get('score_type', '')
+    sub_category = request.args.get('sub_category', '')
 
     result = []
     where_clauses = ['year=?', 'min_score IS NOT NULL']
@@ -146,6 +147,7 @@ def api_schools():
     if fee: where_clauses.append('fee_type = ?'); params.append(fee)
     if batch: where_clauses.append('batch = ?'); params.append(batch)
     if score_type: where_clauses.append('score_type = ?'); params.append(score_type)
+    if sub_category: where_clauses.append('major_name LIKE ?'); params.append(f'%{sub_category}%')
 
     if school_type in ('pg', 'all'):
         where_pg = where_clauses + ['school_type = "普通高中"']
