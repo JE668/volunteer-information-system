@@ -121,6 +121,7 @@ function renderHeader(type) {
     <th class="px-6 py-4 border-b">年份</th>
     <th class="px-6 py-4 border-b">批次</th>
     <th class="px-6 py-4 border-b">计划类型</th>
+    <th class="px-6 py-4 border-b">学校名称</th>
     <th class="px-6 py-4 border-b">专业代码</th>
     <th class="px-6 py-4 border-b">细分专业/方向</th>
     <th class="px-6 py-4 border-b">学校属性</th>
@@ -146,13 +147,13 @@ function renderHeader(type) {
 
 function renderRow(s) {
     let displayMajor = s.major_name || s.plan_type || '-';
-    
     if (s.type === 'voc') {
     return `
     <tr class="hover:bg-gray-50 transition">
     <td class="px-6 py-4 text-sm">${s.year || '-'}</td>
     <td class="px-6 py-4 text-sm">${s.batch || '-'}</td>
     <td class="px-6 py-4 text-xs"><span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded font-medium">${s.score_type || '-'}</span></td>
+    <td class="px-6 py-4 font-medium">${s.school_name || '-'}</td>
     <td class="px-6 py-4 text-xs">${s.major_code || '-'}</td>
     <td class="px-6 py-4 font-medium">${displayMajor}</td>
     <td class="px-6 py-4 text-xs text-gray-500">${s.school_attr || '-'}</td>
@@ -166,12 +167,10 @@ function renderRow(s) {
     </tr>
     `;
     } else {
-    // 处理指标生：显示初中学校
     let schoolDisplay = s.school_name || '-';
     if (s.score_type === '指标生' && s.junior_school) {
-        schoolDisplay = `<div>${s.school_name}</div><div class="text-xs text-indigo-500 font-normal">指标生 $\rightarrow$ ${s.junior_school}</div>`;
+        schoolDisplay = `<div>${s.school_name}</div><div class="text-xs text-indigo-500 font-normal">指标生 $\\rightarrow$ ${s.junior_school}</div>`;
     }
-
     return `
     <tr class="hover:bg-gray-50 transition">
     <td class="px-6 py-4 text-sm">${s.year || '-'}</td>
@@ -190,7 +189,6 @@ function renderRow(s) {
     <td class="px-6 py-4 text-right font-mono font-bold text-indigo-600">${s.min_score !== null && s.min_score !== undefined ? s.min_score + '分' : '无'}</td>
     </tr>
     `;
-    }
 }
 
 document.getElementById('searchBtn').onclick = async () => {
