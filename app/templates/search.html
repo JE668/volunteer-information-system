@@ -205,7 +205,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const subCategory = subTypeSelect.value;
             
             renderHeader(type);
-            const res = await fetch(`/api/schools?year=${year}&type=${type}&attr=${attr}&fee=${fee}&batch=${batch}&score_type=${scoreType}&sub_category=${subCategory}`);
+                        const params = new URLSearchParams({ 
+                year, type, attr, fee, batch, 
+                score_type: scoreType, 
+                sub_category: subCategory 
+            });
+            const res = await fetch(`/api/schools?${params.toString()}`);
             if (!res.ok) throw new Error('Search API response not ok');
             const data = await res.json();
             const list = document.getElementById('schoolList');
