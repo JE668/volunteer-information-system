@@ -76,34 +76,42 @@
 
 <script>
 async function updateFilters() {
-    const year = document.getElementById('yearSelect').value;
+    const yearSelect = document.getElementById('yearSelect');
     const batchSelect = document.getElementById('batchSelect');
     const scoreTypeSelect = document.getElementById('scoreTypeSelect');
     
+    if (!yearSelect || !batchSelect || !scoreTypeSelect) {
+        console.error('Required DOM elements not found');
+        return;
+    }
+
+    const year = yearSelect.value;
+    
     try {
         const res = await fetch(`/api/filters?year=${year}`);
-        if (!res.ok) throw new Error('API response not ok');
+        if (!res.ok) throw new Error(`API response not ok: ${res.status}`);
         const data = await res.json();
         
-        // 1. 填充批次
-        batchSelect.innerHTML = '<option value="">全部批次</option>';
+        // 1. 填充批次 - 使用数组 join 减少 DOM 操作次数
+        let batchHtml = '<option value="">全部批次</option>';
         if (data.batches && data.batches.length > 0) {
-            data.batches.forEach(b => {
-                batchSelect.innerHTML += `<option value="${b}">${b}</option>`;
-            });
+            batchHtml += data.batches.map(b => `<option value="${b}">${b}</option>`).join('');
         } else {
-            batchSelect.innerHTML = '<option value="">无批次数据</option>';
+            batchHtml = '<option value="">无批次数据</option>';
         }
+        batchSelect.innerHTML = batchHtml;
         
         // 2. 填充计划类型
-        scoreTypeSelect.innerHTML = '<option value="">全部</option>';
+        let scoreTypeHtml = '<option value="">全部</option>';
         if (data.score_types && data.score_types.length > 0) {
-            data.score_types.forEach(st => {
-                scoreTypeSelect.innerHTML += `<option value="${st}">${st}</option>`;
-            });
+            scoreTypeHtml += data.score_types.map(st => `<option value="${st}">${st}</option>`).join('');
+            scoreTypeSelect.innerHTML = scoreTypeHtml;
+            
             // 默认选中普通高中
             if (data.score_types.includes('普通高中')) {
                 scoreTypeSelect.value = '普通高中';
+            } else {
+                scoreTypeSelect.value = data.score_types[0];
             }
         } else {
             scoreTypeSelect.innerHTML = '<option value="">无类型数据</option>';
@@ -263,6 +271,14 @@ document.getElementById('scoreTypeSelect').onchange = function() {
 
 window.addEventListener('DOMContentLoaded', () => {
     updateFilters();
+    // 兜底机制：如果 1 秒后依然在加载，再次尝试初始化
+    setTimeout(() => {
+        const batchSelect = document.getElementById('batchSelect');
+        if (batchSelect && batchSelect.innerHTML.includes('加载中...')) {
+            console.log('Initialization fallback triggered...');
+            updateFilters();
+        }
+    }, 1000);
 });
 </script>
 {% endblock %}
