@@ -133,7 +133,7 @@ def api_filter_junior_schools():
     # Get all unique junior schools for a given year that have entries in the scores table
     # Especially for indicator students (指标生)
     junior_schools = [r['junior_school'] for r in db.execute(
-        'SELECT DISTINCT junior_school FROM scores WHERE year=? AND junior_school IS NOT NULL AND junior_school != "" ORDER BY junior_school', [year]
+        'SELECT DISTINCT junior_school FROM quota WHERE year=? AND junior_school IS NOT NULL AND junior_school != "" ORDER BY junior_school', [year]
     ).fetchall()]
     return jsonify(junior_schools)
 
