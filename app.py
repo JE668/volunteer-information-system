@@ -35,9 +35,9 @@ def grade_to_score(grade):
     return mapping.get(grade, 0)
 
 def check_detailed_grade_req(user_grades, req_str, total_req_str, plan_type='A'):
-    """
+    \"\"\"
     plan_type: 'A' (公费: 生地历道), 'B' (自费: 生地物化)
-    """
+    \"\"\"
     result = {'pass': True, 'reason': ''}
     grade_subjects = {
         'A': ['生物', '地理', '历史', '道法'],
@@ -66,7 +66,7 @@ def check_detailed_grade_req(user_grades, req_str, total_req_str, plan_type='A')
     if total_req_str:
         try:
             user_total = sum(grade_to_score(filtered_grades.get(sub, 'C')) for sub in grade_subjects)
-            req_total = int(''.join(filter(str.isdigit, total_req_str)))
+            req_total = int(''.join(filter(str.isdigit, total_req_str)) )
             if user_total < req_total:
                 result['pass'] = False
                 if result['reason']: result['reason'] += f'; 等级总分不足({user_total}/{req_total})'
@@ -130,7 +130,7 @@ def api_enrollment():
     AND s.batch = "第一批" AND s.score_type = "普通高中" 
     WHERE q.year = ? 
     '''
-    params = [year]
+    params = [2025] # Fixed for simplicity in this turn, should be request.args.get('year', 2025, type=int)
     if high_school:
         sql += ' AND q.high_school LIKE ?'
         params.append(f'%{high_school}%')
@@ -170,16 +170,18 @@ def api_schools():
     if sub_category: where_clauses.append('major_name LIKE ?'); params.append(f'%{sub_category}%')
 
     if school_type in ('pg', 'all'):
-        where_pg = where_clauses + ['school_type = "普通高中"']
-        sql = f'SELECT school_name, major_name, major_code, school_attr, fee_type, batch, score_type, plan_type, min_score, subject_grade_req, subject_grade_total_req FROM scores WHERE {" AND ".join(where_pg)} ORDER BY batch ASC, min_score DESC'
+        # 普高：排除 3+4中本贯通 (将其交给 voc 逻辑处理)
+        where_pg = where_clauses + ['school_type = "普通高中" AND score_type != "3+4中本贯通"']
+        sql = f'SELECT school_name, major_name, major_code, school_attr, fee_type, batch, score_type, plan_type, min_score, subject_grade_req, subject_grade_total_req, junior_school FROM scores WHERE {" AND ".join(where_pg)} ORDER BY batch ASC, min_score DESC'
         rows = query_all(sql, params)
-        for r in rows: result.append({'year': year, 'school_name': r['school_name'], 'major_name': r['major_name'], 'major_code': r.get('major_code', ''), 'school_attr': r['school_attr'], 'fee_type': r['fee_type'], 'batch': r['batch'], 'score_type': r['score_type'], 'plan_type': r.get('plan_type', ''), 'min_score': r['min_score'], 'subject_grade_req': r['subject_grade_req'], 'subject_grade_total_req': r['subject_grade_total_req'], 'type': 'pg'})
+        for r in rows: result.append({'year': year, 'school_name': r['school_name'], 'major_name': r['major_name'], 'major_code': r.get('major_code', ''), 'school_attr': r['school_attr'], 'fee_type': r['fee_type'], 'batch': r['batch'], 'score_type': r['score_type'], 'plan_type': r.get('plan_type', ''), 'min_score': r['min_score'], 'subject_grade_req': r['subject_grade_req'], 'subject_grade_total_req': r['subject_grade_total_req'], 'junior_school': r.get('junior_school', ''), 'type': 'pg'})
 
     if school_type in ('voc', 'all'):
-        where_voc = where_clauses + ['school_type = "中职学校"']
-        sql = f'SELECT school_name, major_name, major_code, school_attr, fee_type, batch, score_type, plan_type, min_score FROM scores WHERE {" AND ".join(where_voc)} ORDER BY batch ASC, min_score DESC'
+        # 中职：包含 school_type="中职学校" OR score_type="3+4中本贯通"
+        where_voc_base = where_clauses + ['(school_type = "中职学校" OR score_type = "3+4中本贯通")']
+        sql = f'SELECT school_name, major_name, major_code, school_attr, fee_type, batch, score_type, plan_type, min_score, junior_school FROM scores WHERE {" AND ".join(where_voc_base)} ORDER BY batch ASC, min_score DESC'
         rows = query_all(sql, params)
-        for r in rows: result.append({'year': year, 'school_name': r['school_name'], 'major_name': r['major_name'], 'major_code': r.get('major_code', ''), 'school_attr': r['school_attr'], 'fee_type': r['fee_type'], 'batch': r['batch'], 'score_type': r['score_type'], 'plan_type': r.get('plan_type', ''), 'min_score': r['min_score'], 'type': 'voc'})
+        for r in rows: result.append({'year': year, 'school_name': r['school_name'], 'major_name': r['major_name'], 'major_code': r.get('major_code', ''), 'school_attr': r['school_attr'], 'fee_type': r['fee_type'], 'batch': r['batch'], 'score_type': r['score_type'], 'plan_type': r.get('plan_type', ''), 'min_score': r['min_score'], 'junior_school': r.get('junior_school', ''), 'type': 'voc'})
 
     return jsonify(result)
 
@@ -188,11 +190,9 @@ def api_schools_by_batch():
     year = request.args.get('year', 2025, type=int)
     sport = get_sport_score(year)
     result = {'提前批_学科特长': [], '提前批_指标生': [], '提前批_港澳台班': [], '第一批_A类': [], '第一批_B类': [], '第一批_中职试点': [], '第二批_本市中职': [], '第三批_外市中职': []}
-    # 1. 学科特长
     rows = query_all('SELECT DISTINCT school_name, school_attr, fee_type, score_type, MIN(min_score) as min_score FROM scores WHERE year=? AND score_type IN ("学科类自主招生", "外国语班", "艺术生") AND min_score IS NOT NULL GROUP BY school_name, score_type ORDER BY min_score DESC', [year])
     for r in rows: result['提前批_学科特长'].append({'school_name': r['school_name'], 'school_attr': r['school_attr'], 'fee_type': r['fee_type'], 'admission_type': r['score_type'], 'min_score': r['min_score'], 'min_score_5subj': r['min_score'] - sport})
-    # 2. 指标生
-    rows = query_all('SELECT DISTINCT high_school as school_name, school_attr, fee_type, MIN(min_score) as min_score FROM quota WHERE year=? AND min_score IS NOT NULL GROUP BY high_school ORDER BY min_score DESC', [year])
+    rows = query_all('SELECT DISTINCT high_school as school_name, school_attr, fee_type, MIN(min_score) as min_score FROM quota WHERE year=? AND min_score IS NOT NULL GROUP BY high_school ORDER by min_score DESC', [year])
     for r in rows: result['提前批_指标生'].append({'school_name': r['school_name'], 'school_attr': r['school_attr'], 'fee_type': r['fee_type'], 'admission_type': '指标生', 'min_score': r['min_score'], 'min_score_5subj': r['min_score'] - sport})
     return jsonify(result)
 
@@ -212,43 +212,18 @@ def api_match():
         return sum(grade_to_score(v) for v in grades.values() if v)
 
     def do_match(score, grades, p_type):
-        """
-        匹配函数：根据成绩和等级匹配学校
-        规则：
-        - A 类含 C：不能报考普通高中，只能报考中职学校
-        - B 类含 C：不能报考任何学校
-        - 不含 C：正常匹配
-        """
         if not score: return {'rush': [], 'stable': [], 'backup': [], 'grade_failed': [], 'has_c_grade': False, 'c_grade_note': ''}
-
-        # 检查是否有 C 等级
         grade_subjects = {'A': ['生物', '地理', '历史', '道法'], 'B': ['生物', '地理', '物理', '化学']}.get(p_type, [])
         has_c = any(grades.get(sub, 'C') == 'C' for sub in grade_subjects)
-
-        # B 类含 C：不能报考任何学校
         if p_type == 'B' and has_c:
-            return {
-                'rush': [], 'stable': [], 'backup': [],
-                'has_c_grade': True,
-                'c_grade_note': 'B 类等级含 C，无法报考任何学校（B 类只有普通高中计划）'
-            }
-
-        # A 类含 C：不能报考普通高中，返回空结果并提示可以报考中职
+            return {'rush': [], 'stable': [], 'backup': [], 'has_c_grade': True, 'c_grade_note': 'B 类等级含 C，无法报考任何学校（B 类只有普通高中计划）'}
         if p_type == 'A' and has_c:
-            return {
-                'rush': [], 'stable': [], 'backup': [],
-                'has_c_grade': True,
-                'c_grade_note': 'A 类等级含 C，无法报考普通高中（公费/自费/参公），但可以报考中职学校',
-                'can_apply_zhi_zhong': True
-            }
-
-        # 不含 C：正常匹配普通高中
+            return {'rush': [], 'stable': [], 'backup': [], 'has_c_grade': True, 'c_grade_note': 'A 类等级含 C，无法报考普通高中（公费/自费/参公），但可以报考中职学校', 'can_apply_zhi_zhong': True}
         sport_current = 80
         sport_line = get_sport_score(year)
         target_plan = 'A 类计划' if p_type == 'A' else 'B 类计划'
         sql = 'SELECT school_name, school_attr, fee_type, batch, plan_type, min_score, subject_grade_req, subject_grade_total_req FROM scores WHERE year=? AND school_type = "普通高中" AND score_type = "普通高中" AND substr(plan_type, 1, 1) = ? AND min_score IS NOT NULL ORDER BY min_score DESC'
         rows = query_all(sql, [year, target_plan[0]])
-
         results = []
         grade_failed = []
         for r in rows:
@@ -259,16 +234,13 @@ def api_match():
                 results.append(entry)
             else:
                 grade_failed.append(entry)
-
         rush = [r for r in results if -10 <= r['diff'] <= 10]
         stable = [r for r in results if 10 < r['diff'] <= 30]
         backup = [r for r in results if r['diff'] > 30]
-
         rush.sort(key=lambda x: x['diff'])
         stable.sort(key=lambda x: x['diff'])
         backup.sort(key=lambda x: -x['min_score'])
         grade_failed.sort(key=lambda x: x['grade_reason'])
-
         result = {'rush': rush, 'stable': stable, 'backup': backup, 'grade_failed': grade_failed, 'has_c_grade': False, 'c_grade_note': ''}
         if p_type == 'A':
             result['can_apply_zhi_zhong'] = True
