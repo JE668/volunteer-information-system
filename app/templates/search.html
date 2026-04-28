@@ -81,21 +81,17 @@
 </div>
 
 <script>
+// 1. Helper Functions (Defined first)
 async function updateFilters() {
     const yearSelect = document.getElementById('yearSelect');
     const batchSelect = document.getElementById('batchSelect');
     const scoreTypeSelect = document.getElementById('scoreTypeSelect');
-    
-    if (!yearSelect || !batchSelect || !scoreTypeSelect) {
-        console.error('Required DOM elements not found');
-        return;
-    }
+    if (!yearSelect || !batchSelect || !scoreTypeSelect) return;
 
     const year = yearSelect.value;
-    
     try {
         const res = await fetch(`/api/filters?year=${year}`);
-        if (!res.ok) throw new Error(`API response not ok: ${res.status}`);
+        if (!res.ok) throw new Error(`API Error: ${res.status}`);
         const data = await res.json();
         
         let batchHtml = '<option value="">全部批次</option>';
@@ -110,12 +106,7 @@ async function updateFilters() {
         if (data.score_types && data.score_types.length > 0) {
             scoreTypeHtml += data.score_types.map(st => `<option value="${st}">${st}</option>`).join('');
             scoreTypeSelect.innerHTML = scoreTypeHtml;
-            
-            if (data.score_types.includes('普通高中')) {
-                scoreTypeSelect.value = '普通高中';
-            } else {
-                scoreTypeSelect.value = data.score_types[0];
-            }
+            scoreTypeSelect.value = data.score_types.includes('普通高中') ? '普通高中' : data.score_types[0];
         } else {
             scoreTypeSelect.innerHTML = '<option value="">无类型数据</option>';
         }
@@ -128,128 +119,128 @@ async function updateFilters() {
 
 function renderHeader(type) {
     const headerRow = document.getElementById('headerRow');
+    if (!headerRow) return;
     if (type === 'voc') {
-    headerRow.innerHTML = `
-    <th class="px-6 py-4 border-b">年份</th>
-    <th class="px-6 py-4 border-b">批次</th>
-    <th class="px-6 py-4 border-b">计划类型</th>
-    <th class="px-6 py-4 border-b">学校名称</th>
-    <th class="px-6 py-4 border-b">专业代码</th>
-    <th class="px-6 py-4 border-b">细分专业/方向</th>
-    <th class="px-6 py-4 border-b">学校属性</th>
-    <th class="px-6 py-4 border-b">收费类型</th>
-    <th class="px-6 py-4 border-b">报考条件</th>
-    <th class="px-6 py-4 border-b text-right">分数线</th>
-    `;
+        headerRow.innerHTML = `
+        <th class="px-6 py-4 border-b">年份</th>
+        <th class="px-6 py-4 border-b">批次</th>
+        <th class="px-6 py-4 border-b">计划类型</th>
+        <th class="px-6 py-4 border-b">学校名称</th>
+        <th class="px-6 py-4 border-b">专业代码</th>
+        <th class="px-6 py-4 border-b">细分专业/方向</th>
+        <th class="px-6 py-4 border-b">学校属性</th>
+        <th class="px-6 py-4 border-b">收费类型</th>
+        <th class="px-6 py-4 border-b">报考条件</th>
+        <th class="px-6 py-4 border-b text-right">分数线</th>
+        `;
     } else {
-    headerRow.innerHTML = `
-    <th class="px-6 py-4 border-b">年份</th>
-    <th class="px-6 py-4 border-b">批次</th>
-    <th class="px-6 py-4 border-b">计划类型</th>
-    <th class="px-6 py-4 border-b">计划属性</th>
-    <th class="px-6 py-4 border-b">学校名称</th>
-    <th class="px-6 py-4 border-b">细分专业/方向</th>
-    <th class="px-6 py-4 border-b">学校属性</th>
-    <th class="px-6 py-4 border-b">收费类型</th>
-    <th class="px-6 py-4 border-b">报考条件</th>
-    <th class="px-6 py-4 border-b text-right">分数线</th>
-    `;
+        headerRow.innerHTML = `
+        <th class="px-6 py-4 border-b">年份</th>
+        <th class="px-6 py-4 border-b">批次</th>
+        <th class="px-6 py-4 border-b">计划类型</th>
+        <th class="px-6 py-4 border-b">计划属性</th>
+        <th class="px-6 py-4 border-b">学校名称</th>
+        <th class="px-6 py-4 border-b">细分专业/方向</th>
+        <th class="px-6 py-4 border-b">学校属性</th>
+        <th class="px-6 py-4 border-b">收费类型</th>
+        <th class="px-6 py-4 border-b">报考条件</th>
+        <th class="px-6 py-4 border-b text-right">分数线</th>
+        `;
     }
 }
 
 function renderRow(s) {
     let displayMajor = s.major_name || s.plan_type || '-';
     if (s.type === 'voc') {
-    return `
-    <tr class="hover:bg-gray-50 transition">
-    <td class="px-6 py-4 text-sm">${s.year || '-'}</td>
-    <td class="px-6 py-4 text-sm">${s.batch || '-'}</td>
-    <td class="px-6 py-4 text-xs"><span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded font-medium">${s.score_type || '-'}</span></td>
-    <td class="px-6 py-4 font-medium">${s.school_name || '-'}</td>
-    <td class="px-6 py-4 text-xs">${s.major_code || '-'}</td>
-    <td class="px-6 py-4 font-medium">${displayMajor}</td>
-    <td class="px-6 py-4 text-xs text-gray-500">${s.school_attr || '-'}</td>
-    <td class="px-6 py-4 text-sm">${s.fee_type || '-'}</td>
-    <td class="px-6 py-4 text-xs">
-        ${s.subject_grade_req ? `<span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-medium">${s.subject_grade_req}</span>` : ''}
-        ${s.subject_grade_total_req ? `<span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded text-xs font-medium ml-1">总分${s.subject_grade_total_req}</span>` : ''}
-        ${(!s.subject_grade_req && !s.subject_grade_total_req) ? '<span class="text-gray-400">无</span>' : ''}
-    </td>
-    <td class="px-6 py-4 text-right font-mono font-bold text-indigo-600">${s.min_score !== null && s.min_score !== undefined ? s.min_score + '分' : '无'}</td>
-    </tr>
-    `;
+        return `
+        <tr class="hover:bg-gray-50 transition">
+            <td class="px-6 py-4 text-sm">${s.year || '-'}</td>
+            <td class="px-6 py-4 text-sm">${s.batch || '-'}</td>
+            <td class="px-6 py-4 text-xs"><span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded font-medium">${s.score_type || '-'}</span></td>
+            <td class="px-6 py-4 font-medium">${s.school_name || '-'}</td>
+            <td class="px-6 py-4 text-xs">${s.major_code || '-'}</td>
+            <td class="px-6 py-4 font-medium">${displayMajor}</td>
+            <td class="px-6 py-4 text-xs text-gray-500">${s.school_attr || '-'}</td>
+            <td class="px-6 py-4 text-sm">${s.fee_type || '-'}</td>
+            <td class="px-6 py-4 text-xs">
+                ${s.subject_grade_req ? `<span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-medium">${s.subject_grade_req}</span>` : ''}
+                ${s.subject_grade_total_req ? `<span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded text-xs font-medium ml-1">总分${s.subject_grade_total_req}</span>` : ''}
+                ${(!s.subject_grade_req && !s.subject_grade_total_req) ? '<span class="text-gray-400">无</span>' : ''}
+            </td>
+            <td class="px-6 py-4 text-right font-mono font-bold text-indigo-600">${s.min_score !== null && s.min_score !== undefined ? s.min_score + '分' : '无'}</td>
+        </tr>`;
     } else {
-    let schoolDisplay = s.school_name || '-';
-    if (s.score_type === '指标生' && s.junior_school) {
-        schoolDisplay = `<div>${s.school_name}</div><div class="text-xs text-indigo-500 font-normal">指标生 $\\rightarrow$ ${s.junior_school}</div>`;
+        let schoolDisplay = s.school_name || '-';
+        if (s.score_type === '指标生' && s.junior_school) {
+            schoolDisplay = `<div>${s.school_name}</div><div class="text-xs text-indigo-500 font-normal">指标生 \rightarrow ${s.junior_school}</div>`;
+        }
+        return `
+        <tr class="hover:bg-gray-50 transition">
+            <td class="px-6 py-4 text-sm">${s.year || '-'}</td>
+            <td class="px-6 py-4 text-sm">${s.batch || '-'}</td>
+            <td class="px-6 py-4 text-xs"><span class="bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded font-medium">${s.score_type || '-'}</span></td>
+            <td class="px-6 py-4 text-xs text-gray-500">${s.plan_type || '-'}</td>
+            <td class="px-6 py-4 font-medium">${schoolDisplay}</td>
+            <td class="px-6 py-4 text-sm text-indigo-600 font-medium">${displayMajor}</td>
+            <td class="px-6 py-4 text-xs text-gray-500">${s.school_attr || '-'}</td>
+            <td class="px-6 py-4 text-sm">${s.fee_type || '-'}</td>
+            <td class="px-6 py-4 text-xs">
+                ${s.subject_grade_req ? `<span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-medium">${s.subject_grade_req}</span>` : ''}
+                ${s.subject_grade_total_req ? `<span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded text-xs font-medium ml-1">总分${s.subject_grade_total_req}</span>` : ''}
+                ${(!s.subject_grade_req && !s.subject_grade_total_req) ? '<span class="text-gray-400">无</span>' : ''}
+            </td>
+            <td class="px-6 py-4 text-right font-mono font-bold text-indigo-600">${s.min_score !== null && s.min_score !== undefined ? s.min_score + '分' : '无'}</td>
+        </tr>`;
     }
-    return `
-    <tr class="hover:bg-gray-50 transition">
-    <td class="px-6 py-4 text-sm">${s.year || '-'}</td>
-    <td class="px-6 py-4 text-sm">${s.batch || '-'}</td>
-    <td class="px-6 py-4 text-xs"><span class="bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded font-medium">${s.score_type || '-'}</span></td>
-    <td class="px-6 py-4 text-xs text-gray-500">${s.plan_type || '-'}</td>
-    <td class="px-6 py-4 font-medium">${schoolDisplay}</td>
-    <td class="px-6 py-4 text-sm text-indigo-600 font-medium">${displayMajor}</td>
-    <td class="px-6 py-4 text-xs text-gray-500">${s.school_attr || '-'}</td>
-    <td class="px-6 py-4 text-sm">${s.fee_type || '-'}</td>
-    <td class="px-6 py-4 text-xs">
-        ${s.subject_grade_req ? `<span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-medium">${s.subject_grade_req}</span>` : ''}
-        ${s.subject_grade_total_req ? `<span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded text-xs font-medium ml-1">总分${s.subject_grade_total_req}</span>` : ''}
-        ${(!s.subject_grade_req && !s.subject_grade_total_req) ? '<span class="text-gray-400">无</span>': ''}
-    </td>
-    <td class="px-6 py-4 text-right font-mono font-bold text-indigo-600">${s.min_score !== null && s.min_score !== undefined ? s.min_score + '分' : '无'}</td>
-    </tr>
-    `;
 }
 
-
+// 2. Event Bindings (All inside DOMContentLoaded)
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('Binding search page events...');
-    
     const searchBtn = document.getElementById('searchBtn');
     const yearSelect = document.getElementById('yearSelect');
     const batchSelect = document.getElementById('batchSelect');
     const scoreTypeSelect = document.getElementById('scoreTypeSelect');
+    const subTypeSelect = document.getElementById('subTypeSelect');
+    const typeSelect = document.getElementById('typeSelect');
 
     if (!searchBtn || !yearSelect || !batchSelect || !scoreTypeSelect) {
-        console.error('Critical DOM elements missing');
+        console.error('Search page critical elements not found');
         return;
     }
 
-    // 1. Search Button
+    // Search Action
     searchBtn.onclick = async () => {
         try {
             const year = yearSelect.value;
-            const type = document.getElementById('typeSelect').value;
+            const type = typeSelect.value;
             const attr = document.getElementById('attrSelect').value;
             const fee = document.getElementById('feeSelect').value;
             const batch = batchSelect.value;
             const scoreType = scoreTypeSelect.value;
-            const subCategory = document.getElementById('subTypeSelect').value;
+            const subCategory = subTypeSelect.value;
             
             renderHeader(type);
             const res = await fetch(`/api/schools?year=${year}&type=${type}&attr=${attr}&fee=${fee}&batch=${batch}&score_type=${scoreType}&sub_category=${subCategory}`);
-            if (!res.ok) throw new Error('Search API failed');
+            if (!res.ok) throw new Error('Search API response not ok');
             const data = await res.json();
             const list = document.getElementById('schoolList');
             list.innerHTML = data.length ? data.map(s => renderRow(s)).join('') : '<tr><td colspan="12" class="px-6 py-12 text-center text-gray-400 italic">未找到相关数据</td></tr>';
         } catch (e) {
-            console.error('Search failed:', e);
+            console.error('Search execution failed:', e);
             alert('查询失败，请检查网络或刷新页面');
         }
     };
 
-    // 2. Year Change
+    // Year Change -> Update Batch/Type
     yearSelect.onchange = updateFilters;
 
-    // 3. Batch Change (Linkage to scoreType)
+    // Batch Change -> Update Type (Dynamic Linkage)
     batchSelect.onchange = async function() {
         const batch = this.value;
         const year = yearSelect.value;
         try {
             const res = await fetch(`/api/filters/types?year=${year}&batch=${batch}`);
-            if (!res.ok) throw new Error('Linkage API failed');
+            if (!res.ok) throw new Error('Type Linkage API failed');
             const data = await res.json();
             scoreTypeSelect.innerHTML = '<option value="">全部</option>';
             if (data.score_types && data.score_types.length > 0) {
@@ -263,14 +254,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // 4. ScoreType Change (Linkage to subType)
+    // Type Change -> Update SubType
     scoreTypeSelect.onchange = function() {
         const scoreType = this.value;
-        const subTypeSelect = document.getElementById('subTypeSelect');
-        const bSelect = document.getElementById('batchSelect');
         subTypeSelect.innerHTML = '';
         if (scoreType === '艺术生' || scoreType === '学科类自主招生') {
-            bSelect.value = '提前批';
+            batchSelect.value = '提前批';
         }
         const mappings = {
             '艺术生': ['全部', '音乐', '美术', '舞蹈', '戏剧'],
@@ -289,8 +278,6 @@ document.addEventListener('DOMContentLoaded', () => {
             subTypeSelect.innerHTML = '<option value="">请先选择计划类型</option>';
         }
     };
-    
-    console.log('All events bound successfully.');
 });
 </script>
 {% endblock %}
