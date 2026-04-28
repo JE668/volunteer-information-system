@@ -106,7 +106,7 @@ async function updateFilters() {
         if (data.score_types && data.score_types.length > 0) {
             scoreTypeHtml += data.score_types.map(st => `<option value="${st}">${st}</option>`).join('');
             scoreTypeSelect.innerHTML = scoreTypeHtml;
-            scoreTypeSelect.value = data.score_types.includes('普通高中') ? '普通高中' : data.score_types[0];
+            scoreTypeSelect.value = '';
         } else {
             scoreTypeSelect.innerHTML = '<option value="">无类型数据</option>';
         }
@@ -232,7 +232,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 data.score_types.forEach(st => {
                     scoreTypeSelect.innerHTML += `<option value="${st}">${st}</option>`;
                 });
-                scoreTypeSelect.value = data.score_types.includes('普通高中') ? '普通高中' : data.score_types[0];
+                scoreTypeSelect.value = '';
             }
         } catch (e) {
             console.error('Batch-Type linkage failed:', e);
