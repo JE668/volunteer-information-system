@@ -180,19 +180,19 @@ def api_schools():
     score_type = request.args.get('score_type', '')
     sub_category = request.args.get('sub_category', '')
 
-    where_clauses = ['year=?', 'min_score IS NOT NULL']
+    where_clauses = ['s.year=?', 's.min_score IS NOT NULL']
     params = [year]
 
-    if attr: where_clauses.append('school_attr = ?'); params.append(attr)
-    if fee: where_clauses.append('fee_type = ?'); params.append(fee)
-    if batch: where_clauses.append('batch = ?'); params.append(batch)
-    if score_type: where_clauses.append('score_type = ?'); params.append(score_type)
-    if sub_category: where_clauses.append('major_name LIKE ?'); params.append(f'%{sub_category}%')
+    if attr: where_clauses.append('s.school_attr = ?'); params.append(attr)
+    if fee: where_clauses.append('s.fee_type = ?'); params.append(fee)
+    if batch: where_clauses.append('s.batch = ?'); params.append(batch)
+    if score_type: where_clauses.append('s.score_type = ?'); params.append(score_type)
+    if sub_category: where_clauses.append('s.major_name LIKE ?'); params.append(f'%{sub_category}%')
 
     if school_type == 'pg':
-        where_clauses.append('school_type = "普通高中" AND score_type != "3+4中本贯通"')
+        where_clauses.append('s.school_type = "普通高中" AND s.score_type != "3+4中本贯通"')
     elif school_type == 'voc':
-        where_clauses.append('(school_type = "中职学校" OR score_type = "3+4中本贯通")')
+        where_clauses.append('(s.school_type = "中职学校" OR s.score_type = "3+4中本贯通")')
     # if school_type == 'all', no additional school_type restriction is needed
 
     sql = f'SELECT s.school_name, s.major_name, s.major_code, s.school_attr, s.fee_type, s.batch, s.score_type, s.plan_type, s.min_score, s.subject_grade_req, s.subject_grade_total_req, COALESCE(q.junior_school, s.junior_school) as junior_school, s.school_type FROM scores s LEFT JOIN quota q ON s.school_name = q.high_school AND s.year = q.year AND s.batch = q.batch WHERE {" AND ".join(where_clauses)} ORDER BY s.batch ASC, s.min_score DESC'
