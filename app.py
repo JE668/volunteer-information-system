@@ -120,6 +120,7 @@ def api_filter_types():
 
 @app.route('/api/enrollment')
 def api_enrollment():
+    year = request.args.get('year', 2025, type=int)
     high_school = request.args.get('high_school', '')
     junior_school = request.args.get('junior_school', '')
     sql = '''
@@ -130,7 +131,7 @@ def api_enrollment():
     AND s.batch = "第一批" AND s.score_type = "普通高中" 
     WHERE q.year = ? 
     '''
-    params = [2025] # Fixed for simplicity in this turn, should be request.args.get('year', 2025, type=int)
+    params = [year]
     if high_school:
         sql += ' AND q.high_school LIKE ?'
         params.append(f'%{high_school}%')
