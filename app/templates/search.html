@@ -117,14 +117,24 @@ async function updateFilters() {
     }
 }
 
-function renderHeader(type) {
+function renderHeader(type, scoreType) {
     const headerRow = document.getElementById('headerRow');
     if (!headerRow) return;
-    headerRow.innerHTML = `
+    
+    // Only show "Junior School" column if current filter is Indicator Students or "All"
+    const showJuniorCol = (scoreType === '指标生' || scoreType === '');
+    
+    let html = `
     <th class="px-6 py-4 border-b">年份</th>
     <th class="px-6 py-4 border-b">批次</th>
     <th class="px-6 py-4 border-b">计划类型</th>
-    <th class="px-6 py-4 border-b">计划属性</th>
+    <th class="px-6 py-4 border-b">计划属性</th>`;
+    
+    if (showJuniorCol) {
+        html += `<th class="px-6 py-4 border-b">初中学校</th>`;
+    }
+    
+    html += `
     <th class="px-6 py-4 border-b">学校名称</th>
     <th class="px-6 py-4 border-b">细分专业/方向</th>
     <th class="px-6 py-4 border-b">学校属性</th>
@@ -132,51 +142,45 @@ function renderHeader(type) {
     <th class="px-6 py-4 border-b">报考条件</th>
     <th class="px-6 py-4 border-b text-right">分数线</th>
     `;
+    headerRow.innerHTML = html;
 }
 
-function renderRow(s) {
+function renderRow(s, scoreType) {
+    const showJuniorCol = (scoreType === '指标生' || scoreType === '');
     let displayMajor = s.major_name || s.plan_type || '-';
-    if (s.type === 'voc') {
-        return `
-        <tr class="hover:bg-gray-50 transition">
-            <td class="px-6 py-4 text-sm">${s.year || '-'}</td>
-            <td class="px-6 py-4 text-sm">${s.batch || '-'}</td>
-            <td class="px-6 py-4 text-xs"><span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded font-medium">${s.score_type || '-'}</span></td>
-            <td class="px-6 py-4 text-xs text-gray-500">${s.plan_type || '-'}</td>
-            <td class="px-6 py-4 font-medium">${s.school_name || '-'}</td>
-            <td class="px-6 py-4 font-medium">${s.major_code ? `[${String(s.major_code).padStart(3, '0')}] ` : ''}${displayMajor}</td>
-            <td class="px-6 py-4 text-xs text-gray-500">${s.school_attr || '-'}</td>
-            <td class="px-6 py-4 text-sm">${s.fee_type || '-'}</td>
-            <td class="px-6 py-4 text-xs">
-                ${s.subject_grade_req ? `<span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-medium">${s.subject_grade_req}</span>` : ''}
-                ${s.subject_grade_total_req ? `<span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded text-xs font-medium ml-1">总分${s.subject_grade_total_req}</span>` : ''}
-                ${(!s.subject_grade_req && !s.subject_grade_total_req) ? '<span class="text-gray-400">无</span>' : ''}
-            </td>
-            <td class="px-6 py-4 text-right font-mono font-bold text-indigo-600">${s.min_score !== null && s.min_score !== undefined ? s.min_score + '分' : '无'}</td>
-        </tr>`;
-    } else {
-        let schoolDisplay = s.school_name || '-';
-        if (s.score_type === '指标生' && s.junior_school) {
-            schoolDisplay = `<div>${s.school_name}</div><div class="text-xs text-indigo-500 font-normal">指标生 \rightarrow ${s.junior_school}</div>`;
-        }
-        return `
-        <tr class="hover:bg-gray-50 transition">
-            <td class="px-6 py-4 text-sm">${s.year || '-'}</td>
-            <td class="px-6 py-4 text-sm">${s.batch || '-'}</td>
-            <td class="px-6 py-4 text-xs"><span class="bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded font-medium">${s.score_type || '-'}</span></td>
-            <td class="px-6 py-4 text-xs text-gray-500">${s.plan_type || '-'}</td>
-            <td class="px-6 py-4 font-medium">${schoolDisplay}</td>
-            <td class="px-6 py-4 text-sm text-indigo-600 font-medium">${displayMajor}</td>
-            <td class="px-6 py-4 text-xs text-gray-500">${s.school_attr || '-'}</td>
-            <td class="px-6 py-4 text-sm">${s.fee_type || '-'}</td>
-            <td class="px-6 py-4 text-xs">
-                ${s.subject_grade_req ? `<span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-medium">${s.subject_grade_req}</span>` : ''}
-                ${s.subject_grade_total_req ? `<span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded text-xs font-medium ml-1">总分${s.subject_grade_total_req}</span>` : ''}
-                ${(!s.subject_grade_req && !s.subject_grade_total_req) ? '<span class="text-gray-400">无</span>' : ''}
-            </td>
-            <td class="px-6 py-4 text-right font-mono font-bold text-indigo-600">${s.min_score !== null && s.min_score !== undefined ? s.min_score + '分' : '无'}</td>
-        </tr>`;
+    
+    let cells = [
+        `<td class="px-6 py-4 text-sm">${s.year || '-'}</td>`,
+        `<td class="px-6 py-4 text-sm">${s.batch || '-'}</td>`,
+        `<td class="px-6 py-4 text-xs"><span class="${s.type === 'voc' ? 'bg-gray-100 text-gray-600' : 'bg-indigo-50 text-indigo-600'} px-2 py-0.5 rounded font-medium">${s.score_type || '-'}</span></td>`,
+        `<td class="px-6 py-4 text-xs text-gray-500">${s.plan_type || '-'}</td>`
+    ];
+
+    if (showJuniorCol) {
+        cells.push(`<td class="px-6 py-4 text-sm text-gray-600">${s.junior_school || '-'}</td>`);
     }
+
+    if (s.type === 'voc') {
+        cells.push(`<td class="px-6 py-4 font-medium">${s.school_name || '-'}</td>`);
+        cells.push(`<td class="px-6 py-4 font-medium">${s.major_code ? `[${String(s.major_code).padStart(3, '0')}] ` : ''}${displayMajor}</td>`);
+    } else {
+        cells.push(`<td class="px-6 py-4 font-medium">${s.school_name || '-'}</td>`);
+        cells.push(`<td class="px-6 py-4 text-sm text-indigo-600 font-medium">${displayMajor}</td>`);
+    }
+
+    cells.push(`<td class="px-6 py-4 text-xs text-gray-500">${s.school_attr || '-'}</td>`);
+    cells.push(`<td class="px-6 py-4 text-sm">${s.fee_type || '-'}</td>`);
+    
+    // Requirements cell
+    let reqs = '';
+    if (s.subject_grade_req) reqs += `<span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-medium">${s.subject_grade_req}</span>`;
+    if (s.subject_grade_total_req) reqs += `<span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded text-xs font-medium ml-1">总分${s.subject_grade_total_req}</span>`;
+    if (!reqs) reqs = '<span class="text-gray-400">无</span>';
+    cells.push(`<td class="px-6 py-4 text-xs">${reqs}</td>`);
+    
+    cells.push(`<td class="px-6 py-4 text-right font-mono font-bold text-indigo-600">${s.min_score !== null && s.min_score !== undefined ? s.min_score + '分' : '无'}</td>`);
+
+    return `<tr class="hover:bg-gray-50 transition">${cells.join('')}</tr>`;
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -187,10 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const subTypeSelect = document.getElementById('subTypeSelect');
     const typeSelect = document.getElementById('typeSelect');
 
-    if (!searchBtn || !yearSelect || !batchSelect || !scoreTypeSelect) {
-        console.error('Search page critical elements not found');
-        return;
-    }
+    if (!searchBtn || !yearSelect || !batchSelect || !scoreTypeSelect) return;
 
     searchBtn.onclick = async () => {
         try {
@@ -202,7 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const scoreType = scoreTypeSelect.value;
             const subCategory = subTypeSelect.value;
             
-            renderHeader(type);
+            renderHeader(type, scoreType);
             const params = new URLSearchParams({ 
                 year, type, attr, fee, batch, 
                 score_type: scoreType, 
@@ -212,7 +213,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!res.ok) throw new Error('Search API response not ok');
             const data = await res.json();
             const list = document.getElementById('schoolList');
-            list.innerHTML = data.length ? data.map(s => renderRow(s)).join('') : '<tr><td colspan="12" class="px-6 py-12 text-center text-gray-400 italic">未找到相关数据</td></tr>';
+            list.innerHTML = data.length ? data.map(s => renderRow(s, scoreType)).join('') : '<tr><td colspan="12" class="px-6 py-12 text-center text-gray-400 italic">未找到相关数据</td></tr>';
         } catch (e) {
             console.error('Search execution failed:', e);
             alert('查询失败，请检查网络或刷新页面');
@@ -274,19 +275,6 @@ document.addEventListener('DOMContentLoaded', () => {
             '学科类自主招生': ['全部', '数学类', '物理类', '化学类', '生物类']
         };
         
-        if (mappings[scoreType]) {
-            subTypeSelect.disabled = false;
-            mappings[scoreType].forEach(opt => {
-                const el = document.createElement('option');
-                el.value = opt === '全部' ? '' : opt;
-                el.textContent = opt;
-                subTypeSelect.appendChild(el);
-            });
-        } else {
-            subTypeSelect.disabled = true;
-            subTypeSelect.innerHTML = '<option value="">请先选择计划类型</option>';
-        }
-    };
         if (mappings[scoreType]) {
             subTypeSelect.disabled = false;
             mappings[scoreType].forEach(opt => {
