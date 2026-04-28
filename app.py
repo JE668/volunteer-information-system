@@ -147,9 +147,9 @@ def api_schools():
 
     if school_type in ('pg', 'all'):
         where_pg = where_clauses + ['school_type = "普通高中"']
-        sql = f'SELECT school_name, major_name, school_attr, fee_type, batch, score_type, min_score FROM scores WHERE {" AND ".join(where_pg)} ORDER BY batch ASC, min_score DESC'
+        sql = f'SELECT school_name, major_name, school_attr, fee_type, batch, score_type, min_score, subject_grade_req, subject_grade_total_req FROM scores WHERE {" AND ".join(where_pg)} ORDER BY batch ASC, min_score DESC'
         rows = query_all(sql, params)
-        for r in rows: result.append({'school_name': r['school_name'], 'major_name': r['major_name'], 'school_attr': r['school_attr'], 'fee_type': r['fee_type'], 'batch': r['batch'], 'score_type': r['score_type'], 'min_score': r['min_score'], 'type': 'pg'})
+        for r in rows: result.append({'school_name': r['school_name'], 'major_name': r['major_name'], 'school_attr': r['school_attr'], 'fee_type': r['fee_type'], 'batch': r['batch'], 'score_type': r['score_type'], 'min_score': r['min_score'], 'subject_grade_req': r['subject_grade_req'], 'subject_grade_total_req': r['subject_grade_total_req'], 'type': 'pg'})
 
     if school_type in ('voc', 'all'):
         where_voc = where_clauses + ['school_type = "中职学校"']
