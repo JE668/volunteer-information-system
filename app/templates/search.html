@@ -92,7 +92,6 @@ async function updateFilters() {
         if (!res.ok) throw new Error(`API response not ok: ${res.status}`);
         const data = await res.json();
         
-        // 1. 填充批次 - 使用数组 join 减少 DOM 操作次数
         let batchHtml = '<option value="">全部批次</option>';
         if (data.batches && data.batches.length > 0) {
             batchHtml += data.batches.map(b => `<option value="${b}">${b}</option>`).join('');
@@ -101,13 +100,11 @@ async function updateFilters() {
         }
         batchSelect.innerHTML = batchHtml;
         
-        // 2. 填充计划类型
         let scoreTypeHtml = '<option value="">全部</option>';
         if (data.score_types && data.score_types.length > 0) {
             scoreTypeHtml += data.score_types.map(st => `<option value="${st}">${st}</option>`).join('');
             scoreTypeSelect.innerHTML = scoreTypeHtml;
             
-            // 默认选中普通高中
             if (data.score_types.includes('普通高中')) {
                 scoreTypeSelect.value = '普通高中';
             } else {
