@@ -97,9 +97,29 @@ def page_simulate(): return render_template('simulate.html')
 def page_about(): return render_template('about.html')
 
 # --- API 接口 ---
+@app.route('/api/filters')
+def api_filters():
+    year = request.args.get('year', 2025, type=int)
+    db = get_db()
+    batches = [r['batch'] for r in db.execute('SELECT DISTINCT batch FROM scores WHERE year=? AND batch IS NOT NULL ORDER BY batch', [year]).fetchall()]
+    return jsonify({'batches': batches})
+
+@app.route('/api/filters/types')
+def api_filter_types():
+    year = request.args.get('year', 2025, type=int)
+    batch = request.args.get('batch', '')
+    db = get_db()
+    sql = 'SELECT DISTINCT score_type FROM scores WHERE year=? AND score_type IS NOT NULL'
+    params = [year]
+    if batch:
+        sql += ' AND batch = ?'
+        params.append(batch)
+    sql += ' ORDER BY score_type'
+    score_types = [r['score_type'] for r in db.execute(sql, params).fetchall()]
+    return jsonify({'score_types': score_types})
+
 @app.route('/api/enrollment')
 def api_enrollment():
-    year = request.args.get('year', 2025, type=int)
     high_school = request.args.get('high_school', '')
     junior_school = request.args.get('junior_school', '')
     sql = '''
